@@ -39,25 +39,40 @@
         .res-loser { background-color: #dc2626 !important; color: white !important; }  
         .res-draw { background-color: #334155 !important; color: white !important; }   
 
-        /* Estilo para asegurar que los logos en el header sean transparentes */
         .header-logo {
             background-color: transparent !important;
             mix-blend-mode: normal;
+        }
+        
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
         }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
 
+    <div id="loading-overlay">
+        <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-900 border-t-transparent mb-2"></div>
+            <p class="text-xs font-black uppercase tracking-widest text-slate-400">Sincronizando Datos...</p>
+        </div>
+    </div>
+
     <div id="main-container" class="max-w-5xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
         
-        <!-- ENCABEZADO MODIFICADO -->
         <div id="pdf-header" class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
             
             <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-white/20 hover:text-blue-400 p-2 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
             </button>
 
-            <!-- LOGO IZQUIERDO -->
             <div class="flex items-center gap-5">
                 <img id="logo-liga" src="logo_liga.png" alt="Logo AMF" class="h-20 w-auto header-logo" onerror="this.src='https://via.placeholder.com/80?text=AMF'">
                 <div class="text-center md:text-left uppercase">
@@ -66,13 +81,11 @@
                 </div>
             </div>
 
-            <!-- BOTÓN EXPORTAR PDF -->
             <button id="btn-export-global" onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase transition-all shadow-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 PDF Pestaña Actual
             </button>
 
-            <!-- LOGOS DERECHA: AFA ARRIBA, CONSEJO FEDERAL ABAJO -->
             <div class="flex flex-col items-center gap-2">
                 <img id="logo-afa" src="logo_afa.png" alt="Logo AFA" class="h-16 w-auto header-logo" onerror="this.src='https://via.placeholder.com/60?text=AFA'">
                 <img id="logo-consejo" src="Consejo Federal.png" alt="Logo Consejo Federal" class="h-14 w-auto header-logo" onerror="this.src='https://via.placeholder.com/60?text=CF'">
@@ -87,13 +100,12 @@
         </nav>
 
         <main class="p-6 md:p-10">
-            
             <div id="equipos" class="tab-content active">
                 <div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
                     <div class="flex gap-2">
                         <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase shadow-sm border-none outline-blue-500">
                         <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
-                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset Torneo</button>
+                        <button onclick="resetTournament()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset Torneo</button>
                     </div>
                 </div>
                 <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -107,7 +119,7 @@
                             <input type="file" id="excel-import" accept=".xlsx, .xls" class="hidden" onchange="importFixture(event)">
                             <button onclick="document.getElementById('excel-import').click()" class="bg-green-600 text-white p-3 rounded-xl font-bold text-[10px] uppercase">Importar Fixture</button>
                         </div>
-                        <select id="filter-category-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                        <select id="filter-category-matches" onchange="renderUI()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                             <option value="TODAS">Categorías: Todas</option>
                             <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                             <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
@@ -119,12 +131,10 @@
                             <option value="1º DIVISION">1º DIVISION</option>
                             <option value="SENIOR">SENIOR</option>
                         </select>
-                        <select id="filter-round-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                        <select id="filter-round-matches" onchange="renderUI()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                             <option value="TODAS">Fechas: Todas</option>
                             <option value="FECHA 1">FECHA 1</option><option value="FECHA 2">FECHA 2</option><option value="FECHA 3">FECHA 3</option>
                             <option value="FECHA 4">FECHA 4</option><option value="FECHA 5">FECHA 5</option><option value="FECHA 6">FECHA 6</option>
-                            <option value="FECHA 7">FECHA 7</option><option value="FECHA 8">FECHA 8</option><option value="FECHA 9">FECHA 9</option>
-                            <option value="FECHA 10">FECHA 10</option>
                         </select>
                     </div>
                 </div>
@@ -148,44 +158,24 @@
                     <div class="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-sm">
                         <div class="flex items-center gap-4">
                             <select id="m-local" class="flex-1 p-2 font-bold uppercase border rounded"></select>
-                            <div class="flex flex-col items-center">
-                                <label class="text-[9px] font-black uppercase mb-1">Goles</label>
-                                <input type="number" id="g-local" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-100 rounded p-2">
-                            </div>
-                            <span class="font-black text-slate-300 italic self-end pb-2">VS</span>
-                            <div class="flex flex-col items-center">
-                                <label class="text-[9px] font-black uppercase mb-1">Goles</label>
-                                <input type="number" id="g-visitor" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-100 rounded p-2">
-                            </div>
+                            <input type="number" id="g-local" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-100 rounded p-2">
+                            <span class="font-black text-slate-300 italic">VS</span>
+                            <input type="number" id="g-visitor" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-100 rounded p-2">
                             <select id="m-visitor" class="flex-1 p-2 font-bold uppercase border rounded"></select>
                         </div>
-                        
                         <div class="grid grid-cols-2 gap-8 border-t pt-4">
                             <div class="flex gap-2">
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-yellow-600 block mb-1">AMARILLAS L</label>
-                                    <input type="number" id="y-local" value="0" class="w-full p-2 bg-yellow-50 rounded font-bold text-center">
-                                </div>
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-red-600 block mb-1">ROJAS L</label>
-                                    <input type="number" id="r-local" value="0" class="w-full p-2 bg-red-50 rounded font-bold text-center">
-                                </div>
+                                <input type="number" id="y-local" value="0" placeholder="Amarillas L" class="w-full p-2 bg-yellow-50 rounded font-bold text-center">
+                                <input type="number" id="r-local" value="0" placeholder="Rojas L" class="w-full p-2 bg-red-50 rounded font-bold text-center">
                             </div>
                             <div class="flex gap-2">
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-yellow-600 block mb-1">AMARILLAS V</label>
-                                    <input type="number" id="y-visitor" value="0" class="w-full p-2 bg-yellow-50 rounded font-bold text-center">
-                                </div>
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-red-600 block mb-1">ROJAS V</label>
-                                    <input type="number" id="r-visitor" value="0" class="w-full p-2 bg-red-50 rounded font-bold text-center">
-                                </div>
+                                <input type="number" id="y-visitor" value="0" placeholder="Amarillas V" class="w-full p-2 bg-yellow-50 rounded font-bold text-center">
+                                <input type="number" id="r-visitor" value="0" placeholder="Rojas V" class="w-full p-2 bg-red-50 rounded font-bold text-center">
                             </div>
                         </div>
                     </div>
                     <button onclick="addMatch()" class="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg">Guardar Resultado</button>
                 </div>
-
                 <div id="match-list" class="space-y-3"></div>
             </div>
 
@@ -193,6 +183,7 @@
                 <div class="mb-8 flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800 uppercase italic">Posiciones</h2>
                     <select id="filter-category-table" onchange="updateStandings()" class="bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                        <option value="1º DIVISION">1º DIVISION</option>
                         <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                         <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                         <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -200,7 +191,6 @@
                         <option value="5º DIVISION">5º DIVISION</option>
                         <option value="4º DIVISION">4º DIVISION</option>
                         <option value="3º DIVISION">3º DIVISION</option>
-                        <option value="1º DIVISION">1º DIVISION</option>
                         <option value="SENIOR">SENIOR</option>
                     </select>
                 </div>
@@ -233,7 +223,7 @@
                             <tr>
                                 <th class="p-5 text-center w-20">Pos</th>
                                 <th class="p-5">Club</th>
-                                <th class="p-2 text-center bg-blue-900">Acumulados</th>
+                                <th class="p-2 text-center bg-blue-900 text-white">Acumulados</th>
                             </tr>
                         </thead>
                         <tbody id="general-standings-body" class="font-bold divide-y divide-slate-100"></tbody>
@@ -243,80 +233,106 @@
         </main>
     </div>
 
-    <script>
-        const ADMIN_KEY = "admin123";
-        let teams = JSON.parse(localStorage.getItem('amf_db_teams')) || [];
-        let matches = JSON.parse(localStorage.getItem('amf_db_matches')) || [];
+    <!-- FIREBASE IMPORT MAP / SDK LOAD -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'amf-app';
+
+        let teams = [];
+        let matches = [];
         let isAdminActive = false;
         let currentTabId = 'equipos';
+        let currentUser = null;
 
-        function getShield(name) { return `escudos/${name.toUpperCase().trim()}.png`; }
+        // AUTH & LISTENERS
+        async function init() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
 
-        function toggleAdmin() {
-            const pass = prompt("Acceso Administrador:");
-            if(pass === ADMIN_KEY) {
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                if (user) {
+                    setupListeners();
+                }
+            });
+        }
+
+        function setupListeners() {
+            // Escuchar Equipos
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'teams'), (snapshot) => {
+                teams = snapshot.docs.map(d => d.data().name);
+                window.renderUI();
+                document.getElementById('loading-overlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 500);
+            }, (err) => console.error("Error teams:", err));
+
+            // Escuchar Partidos
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'matches'), (snapshot) => {
+                matches = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+                window.renderUI();
+                if(currentTabId === 'tabla') window.updateStandings();
+                if(currentTabId === 'general') window.updateGeneralStandings();
+            }, (err) => console.error("Error matches:", err));
+        }
+
+        // EXPOSE TO WINDOW FOR HTML CALLS
+        window.getShield = (name) => `escudos/${name.toUpperCase().trim()}.png`;
+
+        window.toggleAdmin = () => {
+            const pass = prompt("Clave:");
+            if(pass === "admin123") {
                 isAdminActive = true;
                 document.body.classList.add('is-admin');
             } else {
                 isAdminActive = false;
                 document.body.classList.remove('is-admin');
             }
-            render();
-        }
+            window.renderUI();
+        };
 
-        function showTab(id) {
+        window.showTab = (id) => {
             currentTabId = id;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('btn-'+id).classList.add('active');
-            if(id === 'tabla') updateStandings();
-            if(id === 'general') updateGeneralStandings();
-            if(id === 'partidos') render();
-        }
+            if(id === 'tabla') window.updateStandings();
+            if(id === 'general') window.updateGeneralStandings();
+        };
 
-        function addTeam() {
-            const val = document.getElementById('new-team-name').value.trim().toUpperCase();
-            if(val && !teams.includes(val)) {
-                teams.push(val);
+        window.addTeam = async () => {
+            if (!currentUser) return;
+            const name = document.getElementById('new-team-name').value.trim().toUpperCase();
+            if(name && !teams.includes(name)) {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'teams'), { name });
                 document.getElementById('new-team-name').value = '';
-                save();
             }
-        }
+        };
 
-        function importFixture(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet);
-                
-                rows.forEach(row => {
-                    if(row.LOCAL && row.VISITANTE) {
-                        matches.push({
-                            category: row.CATEGORIA || "1º DIVISION",
-                            round: row.FECHA || "FECHA",
-                            tour: "TORNEO OFICIAL",
-                            local: row.LOCAL.toString().toUpperCase().trim(),
-                            visitor: row.VISITANTE.toString().toUpperCase().trim(),
-                            gL: null, gV: null, yL: 0, rL: 0, yV: 0, rV: 0,
-                            id: Date.now() + Math.random()
-                        });
-                    }
-                });
-                save();
-                alert("Fixture Importado con éxito.");
-            };
-            reader.readAsArrayBuffer(file);
-        }
+        window.deleteTeam = async (name) => {
+            if (!currentUser || !confirm("¿Borrar club?")) return;
+            // Nota: En un sistema real buscaríamos el ID, aquí lo simplificamos
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'teams'), (s) => {
+               const docToDel = s.docs.find(d => d.data().name === name);
+               if(docToDel) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', docToDel.id));
+            }, { once: true });
+        };
 
-        function addMatch() {
+        window.addMatch = async () => {
+            if (!currentUser) return;
             const m = {
                 category: document.getElementById('m-category').value,
                 round: document.getElementById('m-round').value.toUpperCase() || 'FECHA',
-                tour: document.getElementById('m-tournament').value.toUpperCase(),
                 local: document.getElementById('m-local').value,
                 visitor: document.getElementById('m-visitor').value,
                 gL: document.getElementById('g-local').value === "" ? null : parseInt(document.getElementById('g-local').value),
@@ -325,222 +341,127 @@
                 rL: parseInt(document.getElementById('r-local').value) || 0,
                 yV: parseInt(document.getElementById('y-visitor').value) || 0,
                 rV: parseInt(document.getElementById('r-visitor').value) || 0,
-                id: Date.now()
+                createdAt: Date.now()
             };
-            if(m.local === m.visitor) return alert("Selecciona equipos distintos");
-            matches.push(m);
-            save();
-            document.getElementById('g-local').value = '';
-            document.getElementById('g-visitor').value = '';
-            document.getElementById('y-local').value = '0';
-            document.getElementById('r-local').value = '0';
-            document.getElementById('y-visitor').value = '0';
-            document.getElementById('r-visitor').value = '0';
-        }
+            if(m.local === m.visitor) return;
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'matches'), m);
+        };
 
-        function getTableData(cat) {
+        window.deleteMatch = async (id) => {
+            if (!currentUser || !confirm("¿Borrar?")) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', id));
+        };
+
+        window.updateStandings = () => {
+            const cat = document.getElementById('filter-category-table').value;
             const table = {};
             teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0, ta:0, tr:0 });
+            
             matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
                 const l = table[m.local], v = table[m.visitor];
                 if(!l || !v) return;
                 l.pj++; v.pj++; l.gf += m.gL; l.gc += m.gV; v.gf += m.gV; v.gc += m.gL;
-                l.ta += (m.yL || 0); l.tr += (m.rL || 0);
-                v.ta += (m.yV || 0); v.tr += (m.rV || 0);
-                if(m.gL > m.gV){ l.pg++; l.pts+=3; v.pp++; }
-                else if(m.gV > m.gL){ v.pg++; v.pts+=3; l.pp++; }
+                l.ta += m.yL; l.tr += m.rL; v.ta += m.yV; v.tr += m.rV;
+                if(m.gL > m.gV) { l.pg++; l.pts+=3; v.pp++; }
+                else if(m.gV > m.gL) { v.pg++; v.pts+=3; l.pp++; }
                 else { l.pe++; v.pe++; l.pts+=1; v.pts+=1; }
             });
-            return Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc));
-        }
 
-        function updateStandings() {
-            const cat = document.getElementById('filter-category-table').value;
-            const sorted = getTableData(cat);
-            document.getElementById('standings-body').innerHTML = sorted.map((s, i) => `
+            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc) - (a.gf-a.gc));
+            document.getElementById('standings-body').innerHTML = sorted.map((s,i) => `
                 <tr class="bg-white">
-                    <td class="p-4 text-center text-slate-400 font-black">${i+1}</td>
-                    <td class="p-4 flex items-center gap-3 font-black uppercase italic">
-                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                    <td class="p-4 text-center font-black">${i+1}</td>
+                    <td class="p-4 flex items-center gap-3 font-black italic uppercase">
+                        <img src="${window.getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         <span>${s.name}</span>
                     </td>
                     <td class="p-2 text-center">${s.pj}</td>
-                    <td class="p-2 text-center text-blue-700">${s.pg}</td>
-                    <td class="p-2 text-center text-slate-500">${s.pe}</td>
-                    <td class="p-2 text-center text-red-700">${s.pp}</td>
-                    <td class="p-2 text-center">${s.gf - s.gc}</td>
-                    <td class="p-2 text-center bg-yellow-50 text-yellow-700 font-bold">${s.ta}</td>
-                    <td class="p-2 text-center bg-red-50 text-red-700 font-bold">${s.tr}</td>
-                    <td class="p-4 text-center bg-blue-900 text-white font-black text-lg">${s.pts}</td>
+                    <td class="p-2 text-center">${s.pg}</td>
+                    <td class="p-2 text-center">${s.pe}</td>
+                    <td class="p-2 text-center">${s.pp}</td>
+                    <td class="p-2 text-center">${s.gf-s.gc}</td>
+                    <td class="p-2 text-center bg-yellow-50">${s.ta}</td>
+                    <td class="p-2 text-center bg-red-50">${s.tr}</td>
+                    <td class="p-4 text-center bg-blue-900 text-white">${s.pts}</td>
                 </tr>
             `).join('');
-        }
+        };
 
-        function updateGeneralStandings() {
+        window.updateGeneralStandings = () => {
             const table = {};
             teams.forEach(t => table[t] = { name:t, pts:0 });
             matches.filter(m => m.gL !== null).forEach(m => {
                 const l = table[m.local], v = table[m.visitor];
-                if(l && v) {
-                    if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
-                }
+                if(!l || !v) return;
+                if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
             });
             const sorted = Object.values(table).sort((a,b) => b.pts - a.pts);
             document.getElementById('general-standings-body').innerHTML = sorted.map((s, i) => `
                 <tr class="bg-white">
-                    <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
-                    <td class="p-5 flex items-center gap-4 font-black uppercase italic">
-                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                    <td class="p-5 text-center font-black">${i+1}</td>
+                    <td class="p-5 flex items-center gap-4 font-black italic uppercase">
+                        <img src="${window.getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         <span>${s.name}</span>
                     </td>
-                    <td class="p-5 text-center bg-blue-900 text-white font-black text-[15px] italic">${s.pts}</td>
+                    <td class="p-5 text-center bg-blue-900 text-white font-black italic">${s.pts}</td>
                 </tr>
             `).join('');
-        }
+        };
 
-        function render() {
+        window.renderUI = () => {
+            // Render Equipos
             document.getElementById('team-grid').innerHTML = teams.sort().map(t => `
-                <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <img src="${getShield(t)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <img src="${window.getShield(t)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         <span class="font-black uppercase text-[10px] italic">${t}</span>
                     </div>
                     ${isAdminActive ? `<button onclick="deleteTeam('${t}')" class="text-red-400 font-bold px-2">X</button>` : ''}
                 </div>
             `).join('');
 
+            // Render Selects
+            const opts = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('m-local').innerHTML = opts;
+            document.getElementById('m-visitor').innerHTML = opts;
+
+            // Render Partidos
             const catF = document.getElementById('filter-category-matches').value;
             const roundF = document.getElementById('filter-round-matches').value;
             const filtered = matches.filter(m => (catF === "TODAS" || m.category === catF) && (roundF === "TODAS" || m.round === roundF));
 
-            document.getElementById('match-list').innerHTML = [...filtered].reverse().map(m => {
-                const isPlayed = m.gL !== null;
-                let classL = "bg-slate-900", classV = "bg-slate-900";
-                
-                if(isPlayed) {
-                    if(m.gL > m.gV) { classL = "res-winner"; classV = "res-loser"; }
-                    else if(m.gV > m.gL) { classV = "res-winner"; classL = "res-loser"; }
-                    else { classL = "res-draw"; classV = "res-draw"; }
-                }
-
-                return `
+            document.getElementById('match-list').innerHTML = filtered.sort((a,b) => b.createdAt - a.createdAt).map(m => `
                 <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-blue-900">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-24 text-[9px] font-black uppercase text-slate-400 leading-tight">
+                    <div class="flex items-center justify-between">
+                        <div class="w-24 text-[9px] font-black uppercase text-slate-400">
                             ${m.round}<br><span class="text-blue-900">${m.category}</span>
                         </div>
-                        <div class="flex-1 text-right font-black uppercase text-[11px] flex items-center justify-end gap-2 italic">
+                        <div class="flex-1 text-right font-black uppercase text-[11px] flex items-center justify-end gap-2">
                             <span>${m.local}</span>
-                            <img src="${getShield(m.local)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                            <img src="${window.getShield(m.local)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         </div>
                         <div class="flex items-center gap-1 mx-4">
-                            <div class="${classL} text-white w-10 h-12 flex items-center justify-center rounded-lg font-black text-2xl">${m.gL ?? '-'}</div>
-                            <div class="${classV} text-white w-10 h-12 flex items-center justify-center rounded-lg font-black text-2xl">${m.gV ?? '-'}</div>
+                            <div class="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded font-black">${m.gL ?? '-'}</div>
+                            <div class="bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded font-black">${m.gV ?? '-'}</div>
                         </div>
-                        <div class="flex-1 text-left font-black uppercase text-[11px] flex items-center gap-2 italic">
-                            <img src="${getShield(m.visitor)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <div class="flex-1 text-left font-black uppercase text-[11px] flex items-center gap-2">
+                            <img src="${window.getShield(m.visitor)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                             <span>${m.visitor}</span>
                         </div>
-                        ${isAdminActive ? `<button onclick="deleteMatch(${m.id})" class="text-red-500 text-[10px] font-bold ml-2">Borrar</button>` : ''}
-                    </div>
-                    <div class="flex justify-center gap-12 border-t pt-3">
-                        <div class="flex gap-4 text-[10px] font-bold">
-                            <span class="text-yellow-600">TA: ${m.yL || 0}</span>
-                            <span class="text-red-600">TR: ${m.rL || 0}</span>
-                        </div>
-                        <div class="flex gap-4 text-[10px] font-bold">
-                            <span class="text-yellow-600">TA: ${m.yV || 0}</span>
-                            <span class="text-red-600">TR: ${m.rV || 0}</span>
-                        </div>
+                        ${isAdminActive ? `<button onclick="deleteMatch('${m.id}')" class="text-red-500 font-bold ml-2">X</button>` : ''}
                     </div>
                 </div>
-            `}).join('');
+            `).join('');
+        };
 
-            const opts = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
-            document.getElementById('m-local').innerHTML = opts;
-            document.getElementById('m-visitor').innerHTML = opts;
-        }
-
-        async function exportarPDF() {
+        window.exportarPDF = () => {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            
-            doc.setFillColor(15, 23, 42); 
-            doc.rect(0, 0, 210, 45, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
-            doc.text("ASOCIACIÓN METROPOLITANA DE FÚTBOL", 105, 18, { align: "center" });
-            doc.setFontSize(9);
-            doc.text("Dto. De Futsal Mayor", 105, 24, { align: "center" });
-            doc.setFontSize(10);
-            doc.text("REPORTE DE " + currentTabId.toUpperCase(), 105, 32, { align: "center" });
-            doc.text("Fecha: " + new Date().toLocaleDateString(), 105, 39, { align: "center" });
+            const doc = new jsPDF();
+            doc.text("AMF - REPORTE OFICIAL", 10, 10);
+            doc.save(`AMF_${currentTabId}.pdf`);
+        };
 
-            if (currentTabId === 'partidos') {
-                const cat = document.getElementById('filter-category-matches').value;
-                const round = document.getElementById('filter-round-matches').value;
-                const filtered = matches.filter(m => (cat === "TODAS" || m.category === cat) && (round === "TODAS" || m.round === round));
-
-                doc.autoTable({
-                    startY: 55,
-                    head: [['Fecha', 'Categoría', 'Local', 'G-L', 'G-V', 'Visitante', 'TA-L', 'TR-L', 'TA-V', 'TR-V']],
-                    body: filtered.map(m => [m.round, m.category, m.local, m.gL??'-', m.gV??'-', m.visitor, m.yL, m.rL, m.yV, m.rV]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [30, 58, 138] },
-                    styles: { fontSize: 8, fontStyle: 'bold' }
-                });
-            } else if (currentTabId === 'tabla') {
-                const cat = document.getElementById('filter-category-table').value;
-                const data = getTableData(cat);
-                doc.autoTable({
-                    startY: 55,
-                    head: [['Pos', 'Club', 'PJ', 'PG', 'PE', 'PP', 'DG', 'TA', 'TR', 'PTS']],
-                    body: data.map((s, i) => [i+1, s.name, s.pj, s.pg, s.pe, s.pp, s.gf-s.gc, s.ta, s.tr, s.pts]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [30, 58, 138] },
-                    columnStyles: { 9: { fillColor: [30, 58, 138], textColor: 255 } }
-                });
-            } else if (currentTabId === 'general') {
-                const genTable = {};
-                teams.forEach(t => genTable[t] = { name:t, pts:0 });
-                matches.filter(m => m.gL !== null).forEach(m => {
-                    const l = genTable[m.local], v = genTable[m.visitor];
-                    if(l && v) {
-                        if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
-                    }
-                });
-                const sorted = Object.values(genTable).sort((a,b) => b.pts - a.pts);
-                doc.autoTable({
-                    startY: 55,
-                    head: [['Posición', 'Club', 'Puntos Acumulados']],
-                    body: sorted.map((s, i) => [i+1, s.name, s.pts]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [30, 58, 138] },
-                    columnStyles: { 2: { fontSize: 14, fontStyle: 'bold' } }
-                });
-            }
-
-            doc.save(`AMF_${currentTabId.toUpperCase()}_REPORTE.pdf`);
-        }
-
-        function deleteTeam(n) { if(confirm("¿Eliminar club?")) { teams = teams.filter(t => t !== n); save(); } }
-        function deleteMatch(id) { matches = matches.filter(m => m.id !== id); save(); }
-        function save() {
-            localStorage.setItem('amf_db_teams', JSON.stringify(teams));
-            localStorage.setItem('amf_db_matches', JSON.stringify(matches));
-            render();
-        }
-        function resetGeneralData() { 
-            if(confirm("¿Estás seguro? Se borrarán todos los RESULTADOS y TABLAS, pero se mantendrán los CLUBES.")) { 
-                matches = []; 
-                localStorage.setItem('amf_db_matches', JSON.stringify(matches));
-                location.reload(); 
-            } 
-        }
-
-        window.onload = () => { render(); showTab('equipos'); };
+        init();
     </script>
 </body>
 </html>
