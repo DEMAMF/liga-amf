@@ -6,95 +6,65 @@
     <title>Asociación Metropolitana de Fútbol - Sistema Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Librerías estables para PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-button.active { border-bottom: 4px solid #2563eb; color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
-        
-        .admin-only { display: none; }
-        body.is-admin .admin-only { display: block; }
-        body.is-admin .admin-only-flex { display: flex; }
-
-        .team-icon {
-            width: 24px;
-            height: 24px;
-            object-fit: contain;
-        }
+        .admin-only { display: none !important; }
+        body.is-admin .admin-only { display: block !important; }
+        .team-logo { width: 28px; height: 28px; object-fit: contain; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-900">
+<body class="min-h-screen text-slate-900">
 
-    <div id="capture-area" class="max-w-6xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
+    <div class="max-w-5xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
         
-        <!-- ENCABEZADO -->
-        <div class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
-            
-            <button onclick="toggleAdmin()" title="Acceso Administrador" class="absolute top-4 right-4 text-white hover:text-blue-400 transition-colors p-2 bg-slate-800 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
+        <!-- HEADER -->
+        <div id="pdf-header" class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
+            <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-white/20 hover:text-blue-400 p-2 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
             </button>
 
             <div class="flex items-center gap-5">
-                <img id="header-logo-liga" src="logo_liga.png" alt="Logo AMF" class="h-24 w-auto object-contain" onerror="this.src='https://via.placeholder.com/100?text=AMF'">
-                <div class="text-center md:text-left">
-                    <h1 class="text-3xl font-black tracking-tighter italic leading-tight uppercase text-white">
-                        ASOCIACIÓN<br>
-                        METROPOLITANA<br>
-                        DE FÚTBOL
-                    </h1>
+                <img src="logo_liga.png" alt="Logo AMF" class="h-20 w-auto" onerror="this.src='https://via.placeholder.com/80?text=AMF'">
+                <div class="text-center md:text-left uppercase">
+                    <h1 class="text-2xl font-black italic leading-tight">Asociación<br>Metropolitana<br>de Fútbol</h1>
                 </div>
             </div>
 
-            <div class="flex flex-wrap justify-center gap-3">
-                <!-- El botón PDF ahora tiene un ID para controlarlo por JS -->
-                <button id="pdf-download-btn" onclick="generatePDF()" class="hidden bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all shadow-lg flex items-center gap-2">
-                    Descargar PDF Posiciones
-                </button>
-                
-                <div class="admin-only-flex hidden gap-3">
-                    <button onclick="document.getElementById('import-excel').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
-                        Importar Excel
-                    </button>
-                    <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls" onchange="importFixture(event)">
-                    <button onclick="exportToExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
-                        Exportar Excel
-                    </button>
-                    <button onclick="resetData()" class="bg-slate-700 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
-                        Reiniciar
-                    </button>
-                    <button onclick="logoutAdmin()" class="bg-orange-600 text-white px-3 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
-                        Salir
-                    </button>
-                </div>
-            </div>
+            <!-- Botón PDF Único -->
+            <button id="btn-descargar-pdf" onclick="exportarPDF()" class="hidden bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase transition-all shadow-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Exportar Pestaña Actual
+            </button>
 
             <div class="flex items-center">
-                <img id="header-logo-afa" src="logo_afa.png" alt="Logo AFA" class="h-24 w-auto object-contain" onerror="this.src='https://via.placeholder.com/100?text=AFA'">
+                <img src="logo_afa.png" alt="Logo AFA" class="h-20 w-auto" onerror="this.src='https://via.placeholder.com/80?text=AFA'">
             </div>
         </div>
 
-        <!-- Navegación -->
+        <!-- MENU -->
         <nav class="flex border-b border-slate-100 bg-white overflow-x-auto">
-            <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Equipos</button>
-            <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Resultados</button>
-            <button onclick="showTab('tabla')" id="btn-tabla" class="tab-button px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Posiciones</button>
-            <button onclick="showTab('general')" id="btn-general" class="tab-button px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Tabla General</button>
+            <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Clubes</button>
+            <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Resultados</button>
+            <button onclick="showTab('tabla')" id="btn-tabla" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Posiciones</button>
+            <button onclick="showTab('general')" id="btn-general" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Tabla General</button>
         </nav>
 
-        <main class="p-4 md:p-10">
-            <!-- SECCIÓN EQUIPOS -->
+        <main class="p-6 md:p-10">
+            
+            <!-- SECCIÓN CLUBES -->
             <div id="equipos" class="tab-content active">
-                <div class="max-w-xl mx-auto text-center mb-12 admin-only">
-                    <h2 class="text-2xl font-black text-blue-600 uppercase italic mb-4">Registro de Clubes</h2>
+                <div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
                     <div class="flex gap-2">
-                        <input type="text" id="new-team-name" placeholder="Nombre del Club..." class="flex-1 bg-slate-100 border-2 border-transparent px-6 py-4 rounded-2xl outline-none focus:border-blue-500 focus:bg-white font-bold uppercase text-sm transition-all">
-                        <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-2xl font-black text-xs uppercase shadow-lg hover:bg-blue-700">Añadir</button>
+                        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase shadow-sm border-none outline-blue-500">
+                        <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
+                        <button onclick="resetData()" class="bg-slate-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset</button>
                     </div>
                 </div>
                 <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
@@ -104,23 +74,9 @@
             <div id="partidos" class="tab-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados</h2>
-                    <select id="filter-category-matches" onchange="render()" class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none">
-                        <option value="TODAS">Categoría: Todas</option>
-                        <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
-                        <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
-                        <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
-                        <option value="6º DIVISION">6º DIVISION</option>
-                        <option value="5º DIVISION">5º DIVISION</option>
-                        <option value="4º DIVISION">4º DIVISION</option>
-                        <option value="3º DIVISION">3º DIVISION</option>
-                        <option value="1º DIVISION">1º DIVISION</option>
-                        <option value="SENIOR">SENIOR</option>
-                    </select>
-                </div>
-
-                <div class="bg-slate-100 p-8 rounded-[2rem] border border-blue-200 mb-10 admin-only">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <select id="m-category" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm uppercase">
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <select id="filter-category-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                            <option value="TODAS">Categorías: Todas</option>
                             <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                             <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                             <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -131,30 +87,50 @@
                             <option value="1º DIVISION">1º DIVISION</option>
                             <option value="SENIOR">SENIOR</option>
                         </select>
-                        <input type="text" id="m-tournament" placeholder="Torneo" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm">
-                        <input type="text" id="m-round" placeholder="Fecha (Ej: Fecha 1)" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm">
+                        <select id="filter-round-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                            <option value="TODAS">Fechas: Todas</option>
+                            <option value="FECHA 1">FECHA 1</option><option value="FECHA 2">FECHA 2</option><option value="FECHA 3">FECHA 3</option>
+                            <option value="FECHA 4">FECHA 4</option><option value="FECHA 5">FECHA 5</option><option value="FECHA 6">FECHA 6</option>
+                            <option value="FECHA 7">FECHA 7</option><option value="FECHA 8">FECHA 8</option><option value="FECHA 9">FECHA 9</option>
+                            <option value="FECHA 10">FECHA 10</option>
+                        </select>
                     </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-7 gap-6 items-center bg-white p-8 rounded-3xl shadow-sm">
-                        <div class="lg:col-span-2"><select id="m-local" class="w-full p-4 rounded-xl border-2 border-slate-100 font-black text-sm uppercase"></select></div>
-                        <div class="lg:col-span-3 flex items-center justify-center gap-4">
-                            <input type="number" id="g-local" placeholder="-" class="w-16 h-16 bg-slate-900 text-white text-center font-black text-3xl rounded-2xl">
-                            <span class="font-black text-slate-200 text-2xl italic">VS</span>
-                            <input type="number" id="g-visitor" placeholder="-" class="w-16 h-16 bg-slate-900 text-white text-center font-black text-3xl rounded-2xl">
-                        </div>
-                        <div class="lg:col-span-2"><select id="m-visitor" class="w-full p-4 rounded-xl border-2 border-slate-100 font-black text-sm uppercase"></select></div>
-                    </div>
-                    <button onclick="addMatch()" class="w-full mt-6 bg-blue-600 text-white py-5 rounded-2xl font-black uppercase text-sm shadow-xl hover:bg-blue-700">Guardar Resultado</button>
                 </div>
 
-                <div id="match-list" class="space-y-4"></div>
+                <div class="admin-only bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <select id="m-category" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm border-none">
+                            <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
+                            <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
+                            <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
+                            <option value="6º DIVISION">6º DIVISION</option>
+                            <option value="5º DIVISION">5º DIVISION</option>
+                            <option value="4º DIVISION">4º DIVISION</option>
+                            <option value="3º DIVISION">3º DIVISION</option>
+                            <option value="1º DIVISION">1º DIVISION</option>
+                            <option value="SENIOR">SENIOR</option>
+                        </select>
+                        <input type="text" id="m-round" placeholder="Ej: FECHA 1" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm border-none">
+                        <input type="text" id="m-tournament" value="TORNEO OFICIAL" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm border-none">
+                    </div>
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-xl shadow-sm">
+                        <select id="m-local" class="flex-1 p-2 font-bold uppercase border-none"></select>
+                        <input type="number" id="g-local" placeholder="0" class="w-12 text-center font-black text-xl bg-slate-100 rounded">
+                        <span class="font-black text-slate-300 italic">VS</span>
+                        <input type="number" id="g-visitor" placeholder="0" class="w-12 text-center font-black text-xl bg-slate-100 rounded">
+                        <select id="m-visitor" class="flex-1 p-2 font-bold uppercase border-none"></select>
+                    </div>
+                    <button onclick="addMatch()" class="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg">Guardar Resultado</button>
+                </div>
+
+                <div id="match-list" class="space-y-3"></div>
             </div>
 
-            <!-- POSICIONES -->
+            <!-- SECCIÓN POSICIONES -->
             <div id="tabla" class="tab-content">
                 <div class="mb-8 flex justify-between items-center">
-                    <h2 class="text-2xl font-black text-slate-800 uppercase italic">Tabla de Posiciones</h2>
-                    <select id="filter-category-table" onchange="updateStandings()" class="bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none border-none">
+                    <h2 class="text-2xl font-black text-slate-800 uppercase italic">Posiciones</h2>
+                    <select id="filter-category-table" onchange="updateStandings()" class="bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                         <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                         <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                         <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -166,36 +142,35 @@
                         <option value="SENIOR">SENIOR</option>
                     </select>
                 </div>
-                <div class="overflow-x-auto rounded-[2rem] border border-slate-200 shadow-2xl bg-white">
+                <div class="overflow-x-auto rounded-3xl border border-slate-200 shadow-xl bg-white">
                     <table class="w-full text-sm text-left">
-                        <thead>
-                            <tr class="bg-slate-900 text-white uppercase font-black text-[10px]">
-                                <th class="p-5 text-center">Pos</th>
-                                <th class="p-5">Club</th>
-                                <th class="p-3 text-center">PJ</th>
-                                <th class="p-3 text-center">PG</th>
-                                <th class="p-3 text-center">PE</th>
-                                <th class="p-3 text-center">PP</th>
-                                <th class="p-3 text-center">GF</th>
-                                <th class="p-3 text-center">GC</th>
-                                <th class="p-3 text-center">DG</th>
-                                <th class="p-5 text-center bg-blue-600 text-white">PTS</th>
+                        <thead class="bg-slate-900 text-white uppercase font-black text-[10px]">
+                            <tr>
+                                <th class="p-4 text-center">Pos</th>
+                                <th class="p-4">Club</th>
+                                <th class="p-2 text-center">PJ</th>
+                                <th class="p-2 text-center">PG</th>
+                                <th class="p-2 text-center">PE</th>
+                                <th class="p-2 text-center">PP</th>
+                                <th class="p-2 text-center">DG</th>
+                                <th class="p-4 text-center bg-blue-600">PTS</th>
                             </tr>
                         </thead>
-                        <tbody id="standings-body" class="font-bold divide-y divide-slate-100"></tbody>
+                        <tbody id="standings-body" class="font-bold divide-y divide-slate-100 italic"></tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- SECCIÓN GENERAL -->
             <div id="general" class="tab-content">
-                <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-8">Tabla General</h2>
-                <div class="overflow-hidden rounded-[2rem] border border-slate-200 shadow-2xl bg-white">
+                <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-8">Tabla General de Clubes</h2>
+                <div class="overflow-hidden rounded-3xl border border-slate-200 shadow-xl bg-white">
                     <table class="w-full text-sm text-left">
-                        <thead>
-                            <tr class="bg-slate-900 text-white uppercase font-black text-[10px]">
-                                <th class="p-5 text-center w-16">Pos</th>
+                        <thead class="bg-slate-900 text-white uppercase font-black text-[10px]">
+                            <tr>
+                                <th class="p-5 text-center w-20">Pos</th>
                                 <th class="p-5">Club</th>
-                                <th class="p-5 text-center bg-blue-600 text-white">Puntos Totales</th>
+                                <th class="p-5 text-center bg-blue-600">Puntos Acumulados</th>
                             </tr>
                         </thead>
                         <tbody id="general-standings-body" class="font-bold divide-y divide-slate-100"></tbody>
@@ -210,118 +185,72 @@
         let teams = JSON.parse(localStorage.getItem('amf_db_teams')) || [];
         let matches = JSON.parse(localStorage.getItem('amf_db_matches')) || [];
         let isAdminActive = false;
+        let currentTabId = 'equipos';
 
-        // Mapeo de escudos según tus especificaciones
-        const teamShields = {
-            "ALAMOS": "escudos/ALAMOS.png",
-            "DEPO": "escudos/DEPO.png",
-            "GUERNICA": "escudos/GUERNICA.png",
-            "LIRICO": "escudos/LIRICO.png",
-            "MALVINAS": "escudos/MALVINAS.png",
-            "SAKURA": "escudos/SAKURA.png",
-            "SANTA ANA": "escudos/SANTA ANA.png",
-            "TRIATAN SUAREZ": "escudos/TRIATAN SUAREZ.png",
-            "TRISTAN SUAREZ": "escudos/TRIATAN SUAREZ.png", // Alias por si acaso
-            "VILLA COL": "escudos/VILLA COL.png"
-        };
-
-        function getShield(teamName) {
-            const key = teamName.toUpperCase().trim();
-            return teamShields[key] || `https://via.placeholder.com/32?text=${key.charAt(0)}`;
-        }
-
-        // Función para convertir imagen a Base64 para jsPDF
-        async function getBase64Image(url) {
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            } catch (e) {
-                return null;
-            }
+        function getShield(name) {
+            return `escudos/${name.toUpperCase().trim()}.png`;
         }
 
         function toggleAdmin() {
-            if (isAdminActive) logoutAdmin();
-            else {
-                const pass = prompt("Contraseña de Administrador:");
-                if (pass === ADMIN_KEY) {
-                    isAdminActive = true;
-                    document.body.classList.add('is-admin');
-                    document.querySelectorAll('.admin-only-flex').forEach(e => e.style.display = 'flex');
-                    render();
-                } else alert("Acceso denegado.");
+            const pass = prompt("Acceso Administrador:");
+            if(pass === ADMIN_KEY) {
+                isAdminActive = true;
+                document.body.classList.add('is-admin');
+                render();
+            } else {
+                isAdminActive = false;
+                document.body.classList.remove('is-admin');
+                render();
             }
         }
 
-        function logoutAdmin() {
-            isAdminActive = false;
-            document.body.classList.remove('is-admin');
-            document.querySelectorAll('.admin-only-flex').forEach(e => e.style.display = 'none');
-            render();
-        }
-
         function showTab(id) {
+            currentTabId = id;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('btn-'+id).classList.add('active');
 
-            // CONTROL DE VISIBILIDAD DEL BOTÓN PDF
-            const pdfBtn = document.getElementById('pdf-download-btn');
-            if(id === 'tabla') {
-                pdfBtn.style.display = 'flex';
-                updateStandings();
-            } else {
-                pdfBtn.style.display = 'none';
-            }
-            
+            const btnPdf = document.getElementById('btn-descargar-pdf');
+            // Mostrar botón en todas las pestañas menos en 'equipos'
+            btnPdf.style.display = (id !== 'equipos') ? 'flex' : 'none';
+
+            if(id === 'tabla') updateStandings();
             if(id === 'general') updateGeneralStandings();
             if(id === 'partidos') render();
         }
 
         function addTeam() {
-            if(!isAdminActive) return;
-            const name = document.getElementById('new-team-name').value.trim().toUpperCase();
-            if(name && !teams.includes(name)) {
-                teams.push(name);
+            const val = document.getElementById('new-team-name').value.trim().toUpperCase();
+            if(val && !teams.includes(val)) {
+                teams.push(val);
                 document.getElementById('new-team-name').value = '';
                 save();
             }
         }
 
         function addMatch() {
-            if(!isAdminActive) return;
-            const cat = document.getElementById('m-category').value;
-            const gL = document.getElementById('g-local').value;
-            const gV = document.getElementById('g-visitor').value;
             const m = {
-                category: cat,
-                tour: document.getElementById('m-tournament').value || 'TORNEO AMF',
-                round: document.getElementById('m-round').value || 'FECHA',
+                category: document.getElementById('m-category').value,
+                round: document.getElementById('m-round').value.toUpperCase() || 'FECHA',
+                tour: document.getElementById('m-tournament').value.toUpperCase(),
                 local: document.getElementById('m-local').value,
                 visitor: document.getElementById('m-visitor').value,
-                gL: gL === "" ? null : parseInt(gL),
-                gV: gV === "" ? null : parseInt(gV),
+                gL: document.getElementById('g-local').value === "" ? null : parseInt(document.getElementById('g-local').value),
+                gV: document.getElementById('g-visitor').value === "" ? null : parseInt(document.getElementById('g-visitor').value),
                 id: Date.now()
             };
-            if(!m.local || !m.visitor || m.local === m.visitor) return alert("Selección de equipos inválida");
+            if(m.local === m.visitor) return alert("Selecciona equipos distintos");
             matches.push(m);
             save();
             document.getElementById('g-local').value = '';
             document.getElementById('g-visitor').value = '';
         }
 
-        function updateStandings() {
-            const category = document.getElementById('filter-category-table').value;
+        function getTableData(cat) {
             const table = {};
             teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0 });
-            matches.filter(m => m.category === category && m.gL !== null).forEach(m => {
+            matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
                 const l = table[m.local], v = table[m.visitor];
                 if(!l || !v) return;
                 l.pj++; v.pj++; l.gf += m.gL; l.gc += m.gV; v.gf += m.gV; v.gc += m.gL;
@@ -329,24 +258,25 @@
                 else if(m.gV > m.gL){ v.pg++; v.pts+=3; l.pp++; }
                 else { l.pe++; v.pe++; l.pts+=1; v.pts+=1; }
             });
-            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc));
+            return Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc));
+        }
+
+        function updateStandings() {
+            const cat = document.getElementById('filter-category-table').value;
+            const sorted = getTableData(cat);
             document.getElementById('standings-body').innerHTML = sorted.map((s, i) => `
                 <tr class="bg-white">
-                    <td class="p-5 text-center text-slate-400">${i+1}</td>
-                    <td class="p-5 uppercase text-slate-700">
-                        <div class="flex items-center gap-3">
-                            <img src="${getShield(s.name)}" class="team-icon" onerror="this.style.display='none'">
-                            <span>${s.name}</span>
-                        </div>
+                    <td class="p-4 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-4 flex items-center gap-3 font-black uppercase italic">
+                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <span>${s.name}</span>
                     </td>
-                    <td class="p-3 text-center">${s.pj}</td>
-                    <td class="p-3 text-center">${s.pg}</td>
-                    <td class="p-3 text-center">${s.pe}</td>
-                    <td class="p-3 text-center">${s.pp}</td>
-                    <td class="p-3 text-center">${s.gf}</td>
-                    <td class="p-3 text-center">${s.gc}</td>
-                    <td class="p-3 text-center">${s.gf - s.gc}</td>
-                    <td class="p-5 text-center bg-blue-600 text-white font-black">${s.pts}</td>
+                    <td class="p-2 text-center">${s.pj}</td>
+                    <td class="p-2 text-center">${s.pg}</td>
+                    <td class="p-2 text-center">${s.pe}</td>
+                    <td class="p-2 text-center">${s.pp}</td>
+                    <td class="p-2 text-center">${s.gf - s.gc}</td>
+                    <td class="p-4 text-center bg-blue-600 text-white font-black text-lg">${s.pts}</td>
                 </tr>
             `).join('');
             return sorted;
@@ -357,159 +287,148 @@
             teams.forEach(t => table[t] = { name:t, pts:0 });
             matches.filter(m => m.gL !== null).forEach(m => {
                 const l = table[m.local], v = table[m.visitor];
-                if(!l || !v) return;
-                if(m.gL > m.gV) l.pts += 3;
-                else if(m.gV > m.gL) v.pts += 3;
-                else { l.pts += 1; v.pts += 1; }
+                if(l && v) {
+                    if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
+                }
             });
             const sorted = Object.values(table).sort((a,b) => b.pts - a.pts);
             document.getElementById('general-standings-body').innerHTML = sorted.map((s, i) => `
                 <tr class="bg-white">
-                    <td class="p-5 text-center text-slate-400">${i+1}</td>
-                    <td class="p-5 uppercase text-slate-700 font-black">
-                         <div class="flex items-center gap-3">
-                            <img src="${getShield(s.name)}" class="team-icon" onerror="this.style.display='none'">
-                            <span>${s.name}</span>
-                        </div>
+                    <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-5 flex items-center gap-4 font-black uppercase italic">
+                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <span>${s.name}</span>
                     </td>
-                    <td class="p-5 text-center bg-blue-600 text-white font-black text-xl">${s.pts}</td>
+                    <td class="p-5 text-center bg-blue-600 text-white font-black text-2xl italic">${s.pts}</td>
                 </tr>
             `).join('');
+            return sorted;
         }
 
         function render() {
-            document.getElementById('team-grid').innerHTML = teams.map(t => `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
+            document.getElementById('team-grid').innerHTML = teams.sort().map(t => `
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-3">
-                        <img src="${getShield(t)}" class="team-icon" onerror="this.style.display='none'">
-                        <div class="font-black uppercase text-sm">${t}</div>
+                        <img src="${getShield(t)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <span class="font-black uppercase text-[10px] italic">${t}</span>
                     </div>
-                    ${isAdminActive ? `<button onclick="deleteTeam('${t}')" class="text-red-300 hover:text-red-500 font-bold px-2">ELIMINAR</button>` : ''}
+                    ${isAdminActive ? `<button onclick="deleteTeam('${t}')" class="text-red-400 font-bold px-2">X</button>` : ''}
                 </div>
             `).join('');
 
-            const filterCat = document.getElementById('filter-category-matches').value;
-            const filteredMatches = filterCat === "TODAS" ? matches : matches.filter(m => m.category === filterCat);
-            document.getElementById('match-list').innerHTML = [...filteredMatches].reverse().map(m => `
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between">
-                    <div class="w-32 text-[10px] font-black uppercase text-blue-500 truncate">${m.category}</div>
-                    <div class="flex-1 text-right font-black uppercase text-xs truncate flex items-center justify-end gap-2">
+            const catF = document.getElementById('filter-category-matches').value;
+            const roundF = document.getElementById('filter-round-matches').value;
+            const filtered = matches.filter(m => (catF === "TODAS" || m.category === catF) && (roundF === "TODAS" || m.round === roundF));
+
+            document.getElementById('match-list').innerHTML = [...filtered].reverse().map(m => `
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm border-l-4 border-l-blue-500">
+                    <div class="w-24 text-[9px] font-black uppercase text-slate-400 leading-tight">
+                        ${m.round}<br><span class="text-blue-500">${m.category}</span>
+                    </div>
+                    <div class="flex-1 text-right font-black uppercase text-[11px] flex items-center justify-end gap-2 italic">
                         <span>${m.local}</span>
-                        <img src="${getShield(m.local)}" class="team-icon" onerror="this.style.display='none'">
+                        <img src="${getShield(m.local)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                     </div>
-                    <div class="flex items-center gap-2 mx-4">
-                        <div class="bg-slate-900 text-white w-10 py-2 rounded-lg text-center font-black">${m.gL ?? '-'}</div>
-                        <div class="bg-slate-900 text-white w-10 py-2 rounded-lg text-center font-black">${m.gV ?? '-'}</div>
+                    <div class="flex items-center gap-1 mx-4">
+                        <div class="bg-slate-900 text-white w-8 h-10 flex items-center justify-center rounded-lg font-black text-xl">${m.gL ?? '-'}</div>
+                        <div class="bg-slate-900 text-white w-8 h-10 flex items-center justify-center rounded-lg font-black text-xl">${m.gV ?? '-'}</div>
                     </div>
-                    <div class="flex-1 text-left font-black uppercase text-xs truncate flex items-center gap-2">
-                        <img src="${getShield(m.visitor)}" class="team-icon" onerror="this.style.display='none'">
+                    <div class="flex-1 text-left font-black uppercase text-[11px] flex items-center gap-2 italic">
+                        <img src="${getShield(m.visitor)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         <span>${m.visitor}</span>
                     </div>
-                    ${isAdminActive ? `<button onclick="deleteMatch(${m.id})" class="ml-4 text-red-500 font-bold uppercase text-[10px]">Borrar</button>` : ''}
+                    ${isAdminActive ? `<button onclick="deleteMatch(${m.id})" class="text-red-500 text-[10px] font-bold ml-2">Borrar</button>` : ''}
                 </div>
             `).join('');
-            
-            const html = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
-            document.getElementById('m-local').innerHTML = html;
-            document.getElementById('m-visitor').innerHTML = html;
+
+            const opts = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('m-local').innerHTML = opts;
+            document.getElementById('m-visitor').innerHTML = opts;
         }
 
-        async function generatePDF() {
+        // --- FUNCIÓN DE EXPORTACIÓN MODULAR ---
+        async function exportarPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            const cat = document.getElementById('filter-category-table').value;
-            
-            // Intentar cargar logos de cabecera en Base64
-            const logoAMF = await getBase64Image('logo_liga.png');
-            const logoAFA = await getBase64Image('logo_afa.png');
+            const btn = document.getElementById('btn-descargar-pdf');
+            btn.disabled = true;
+            btn.innerText = "Procesando...";
 
-            // CABECERA
+            // 1. Diseño de cabecera común
             doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 35, 'F');
-            
-            if(logoAMF) doc.addImage(logoAMF, 'PNG', 10, 5, 25, 25);
-            if(logoAFA) doc.addImage(logoAFA, 'PNG', 175, 5, 25, 25);
-
+            doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(18);
+            doc.setFontSize(22);
             doc.setFont('helvetica', 'bold');
             doc.text("ASOCIACIÓN METROPOLITANA DE FÚTBOL", 105, 18, { align: "center" });
             doc.setFontSize(10);
-            doc.text("SISTEMA OFICIAL DE POSICIONES Y RESULTADOS", 105, 25, { align: "center" });
+            doc.text(`REPORTE EMITIDO: ${new Date().toLocaleString()}`, 105, 28, { align: "center" });
 
-            doc.setTextColor(15, 23, 42);
-            doc.setFontSize(14);
-            doc.text(`CATEGORÍA: ${cat}`, 15, 45);
-            doc.setFontSize(10);
-            doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 15, 52);
+            // 2. Determinar qué exportar según la pestaña activa
+            if (currentTabId === 'partidos') {
+                const cat = document.getElementById('filter-category-matches').value;
+                const round = document.getElementById('filter-round-matches').value;
+                doc.text(`TABLA DE RESULTADOS - ${cat} (${round})`, 105, 34, { align: "center" });
+                
+                const filtered = matches.filter(m => (cat === "TODAS" || m.category === cat) && (round === "TODAS" || m.round === round));
+                
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Fecha', 'Categoría', 'Local', 'Res', 'Visitante']],
+                    body: filtered.map(m => [m.round, m.category, m.local, `${m.gL??'-'} - ${m.gV??'-'}`, m.visitor]),
+                    headStyles: { fillColor: [15, 23, 42] },
+                    theme: 'striped'
+                });
+            } 
+            else if (currentTabId === 'tabla') {
+                const cat = document.getElementById('filter-category-table').value;
+                doc.text(`POSICIONES - ${cat}`, 105, 34, { align: "center" });
+                
+                const posData = getTableData(cat);
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Pos', 'Club', 'PJ', 'PG', 'PE', 'PP', 'DG', 'Pts']],
+                    body: posData.map((s, i) => [i+1, s.name, s.pj, s.pg, s.pe, s.pp, s.gf-s.gc, s.pts]),
+                    headStyles: { fillColor: [37, 99, 235] },
+                    columnStyles: { 7: { fontStyle: 'bold' } }
+                });
+            } 
+            else if (currentTabId === 'general') {
+                doc.text(`TABLA GENERAL DE CLUBES`, 105, 34, { align: "center" });
+                
+                const genTable = {};
+                teams.forEach(t => genTable[t] = { name:t, pts:0 });
+                matches.filter(m => m.gL !== null).forEach(m => {
+                    const l = genTable[m.local], v = genTable[m.visitor];
+                    if(l && v) {
+                        if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
+                    }
+                });
+                const sortedGen = Object.values(genTable).sort((a,b) => b.pts - a.pts);
 
-            // TABLA DE RESULTADOS
-            const resData = matches.filter(m => m.category === cat).map(m => [m.local, `${m.gL} - ${m.gV}`, m.visitor, m.round]);
-            doc.autoTable({ 
-                startY: 60, 
-                head: [['LOCAL', 'RES', 'VISITANTE', 'FECHA']], 
-                body: resData, 
-                theme: 'striped', 
-                headStyles: { fillColor: [15, 23, 42] },
-                styles: { fontSize: 8 }
-            });
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Posición', 'Nombre del Club', 'Puntos Acumulados']],
+                    body: sortedGen.map((s, i) => [i+1, s.name, s.pts]),
+                    headStyles: { fillColor: [71, 85, 105] },
+                    columnStyles: { 2: { fontStyle: 'bold', fontSize: 12 } }
+                });
+            }
 
-            // TABLA DE POSICIONES
-            const standings = updateStandings();
-            doc.setFontSize(14);
-            doc.text("TABLA DE POSICIONES", 15, doc.lastAutoTable.finalY + 15);
-            
-            doc.autoTable({ 
-                startY: doc.lastAutoTable.finalY + 20, 
-                head: [['POS', 'CLUB', 'PJ', 'PG', 'PE', 'PP', 'GF', 'GC', 'DG', 'PTS']], 
-                body: standings.map((s, i) => [i+1, s.name, s.pj, s.pg, s.pe, s.pp, s.gf, s.gc, s.gf-s.gc, s.pts]), 
-                headStyles: { fillColor: [37, 99, 235] },
-                columnStyles: {
-                    9: { fontStyle: 'bold', fillColor: [240, 249, 255] }
-                }
-            });
-
-            doc.save(`AMF_${cat.replace(/ /g, "_")}_${new Date().toISOString().split('T')[0]}.pdf`);
+            doc.save(`AMF_${currentTabId.toUpperCase()}_${Date.now()}.pdf`);
+            btn.disabled = false;
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> Exportar Pestaña Actual`;
         }
 
-        function deleteMatch(id) { if(isAdminActive) { matches = matches.filter(m => m.id !== id); save(); } }
-        function deleteTeam(n) { if(isAdminActive) { teams = teams.filter(t => t !== n); save(); } }
+        function deleteTeam(n) { teams = teams.filter(t => t !== n); save(); }
+        function deleteMatch(id) { matches = matches.filter(m => m.id !== id); save(); }
         function save() {
             localStorage.setItem('amf_db_teams', JSON.stringify(teams));
             localStorage.setItem('amf_db_matches', JSON.stringify(matches));
             render();
         }
-        function exportToExcel() {
-            if(!isAdminActive) return;
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(matches);
-            XLSX.utils.book_append_sheet(wb, ws, "Partidos");
-            XLSX.writeFile(wb, "Respaldo_AMF.xlsx");
-        }
-        function importFixture(e) {
-            if(!isAdminActive) return;
-            const f = e.target.files[0];
-            const r = new FileReader();
-            r.onload = (e) => {
-                const b = new Uint8Array(e.target.result);
-                const w = XLSX.read(b, {type:'array'});
-                const d = XLSX.utils.sheet_to_json(w.Sheets[w.SheetNames[0]]);
-                d.forEach(row => {
-                    const v = Object.values(row);
-                    if(v[0] && v[3] && v[4]) {
-                        matches.push({ category:v[0].toString().toUpperCase(), local:v[3].toString().toUpperCase(), visitor:v[4].toString().toUpperCase(), gL:null, gV:null, id:Date.now()+Math.random() });
-                        if(!teams.includes(v[3].toString().toUpperCase())) teams.push(v[3].toString().toUpperCase());
-                        if(!teams.includes(v[4].toString().toUpperCase())) teams.push(v[4].toString().toUpperCase());
-                    }
-                });
-                save();
-            };
-            r.readAsArrayBuffer(f);
-        }
-        function resetData() { 
-            if(!isAdminActive) return;
-            if(confirm("¿Borrar todo permanentemente?")) { localStorage.clear(); location.reload(); } 
-        }
+        function resetData() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
+
         window.onload = () => { render(); showTab('equipos'); };
     </script>
 </body>
