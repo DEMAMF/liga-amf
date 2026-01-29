@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asociación Metropolitana de Fútbol - Sistema Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
@@ -14,14 +15,7 @@
         .tab-content.active { display: block; }
         .tab-button.active { border-bottom: 4px solid #2563eb; color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
         
-        .team-logo {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            margin-right: 12px;
-        }
-
-        .team-badge-fallback {
+        .team-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -33,15 +27,15 @@
             font-size: 14px;
             margin-right: 12px;
             text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        /* Ocultar elementos de administración si no es admin */
-        body:not(.is-admin) .admin-only { display: none !important; }
-
-        /* Ajustes para la exportación de imagen */
+        /* Estilos para exportación */
+        .export-title { display: none; }
+        .is-exporting .export-title { display: block; }
         .is-exporting .no-print { display: none !important; }
         .is-exporting { padding: 0 !important; }
-        .is-exporting #capture-area { border: none !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; width: 1000px !important; }
+        #capture-area { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
@@ -62,21 +56,17 @@
             </div>
 
             <div class="flex flex-wrap justify-center gap-3 no-print">
-                <!-- Botón de descarga visual para delegados -->
-                <button id="btn-download" onclick="exportToImage()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-black text-[11px] uppercase transition-all shadow-lg flex items-center gap-2">
-                    📥 Descargar Imagen para Compartir
+                <button onclick="document.getElementById('import-excel').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
+                    Importar Excel
                 </button>
-
-                <button onclick="checkAdmin()" id="btn-login" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase transition-all">
-                    🔒 Acceso Admin
-                </button>
+                <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls" onchange="importFixture(event)">
                 
-                <div class="admin-only flex gap-2">
-                    <button onclick="resetData()" class="bg-red-500 text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase transition-all">
-                        Reiniciar Todo
-                    </button>
-                    <button onclick="logout()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase transition-all">Salir</button>
-                </div>
+                <button onclick="exportToExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
+                    Descargar Excel
+                </button>
+                <button onclick="resetData()" class="bg-red-500 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
+                    Reiniciar
+                </button>
             </div>
 
             <div class="flex items-center">
@@ -95,7 +85,7 @@
         <main class="p-4 md:p-10">
             <!-- SECCIÓN EQUIPOS -->
             <div id="equipos" class="tab-content active">
-                <div class="max-w-xl mx-auto text-center mb-12 no-print admin-only">
+                <div class="max-w-xl mx-auto text-center mb-12 no-print">
                     <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-4">Registro de Clubes</h2>
                     <div class="flex gap-2">
                         <input type="text" id="new-team-name" placeholder="Ej: Club Atlético..." class="flex-1 bg-slate-100 border-2 border-transparent px-6 py-4 rounded-2xl outline-none focus:border-blue-500 focus:bg-white font-bold uppercase text-sm transition-all">
@@ -109,7 +99,11 @@
             <div id="partidos" class="tab-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div>
-                        <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados Recientes</h2>
+                        <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados</h2>
+                        <!-- Titulo para la imagen -->
+                        <div class="export-title mt-2">
+                            <span id="display-cat-matches" class="text-xl font-black text-blue-600 uppercase italic"></span>
+                        </div>
                         <div class="mt-2 flex flex-wrap items-center gap-3 no-print">
                             <span class="text-[10px] font-black text-slate-400 uppercase">Filtros:</span>
                             <select id="filter-category-matches" onchange="render()" class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none">
@@ -124,16 +118,19 @@
                                 <option value="1º DIVISION">1º DIVISION</option>
                                 <option value="SENIOR">SENIOR</option>
                             </select>
-                            <input type="text" id="filter-round-matches" oninput="render()" placeholder="Filtrar por Fecha..." class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none w-40">
+                            <input type="text" id="filter-round-matches" oninput="render()" placeholder="Buscar Fecha..." class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none w-40">
                         </div>
                     </div>
+                    <button onclick="exportToImage('Resultados_AMF.png')" class="bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl no-print">
+                        📸 CAPTURAR IMAGEN
+                    </button>
                 </div>
 
-                <!-- Formulario Carga (Admin Only) -->
-                <div class="bg-slate-100 p-8 rounded-[2rem] border border-slate-200 mb-10 no-print admin-only">
+                <!-- Formulario Carga (no-print) -->
+                <div class="bg-slate-100 p-8 rounded-[2rem] border border-slate-200 mb-10 no-print">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <select id="m-category" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm uppercase">
-                            <option value="" disabled selected>Categoría</option>
+                            <option value="" disabled selected>Seleccionar Categoría</option>
                             <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                             <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                             <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -148,8 +145,8 @@
                         <input type="text" id="m-round" placeholder="Fecha (Ej: Fecha 1)" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm">
                     </div>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-7 gap-6 items-center bg-white p-8 rounded-3xl shadow-sm">
-                        <div class="lg:col-span-2 space-y-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-7 gap-6 items-center bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
+                        <div class="lg:col-span-2 space-y-4 text-center">
                             <select id="m-local" class="w-full p-4 rounded-xl border-2 border-slate-100 font-black text-sm uppercase outline-none"></select>
                             <div class="flex gap-2">
                                 <input type="number" id="y-local" placeholder="🟨" class="w-full bg-yellow-50 p-2 rounded-xl text-center font-black">
@@ -161,7 +158,7 @@
                             <span class="font-black text-slate-200 text-2xl italic">VS</span>
                             <input type="number" id="g-visitor" placeholder="-" class="w-16 h-16 bg-slate-900 text-white text-center font-black text-3xl rounded-2xl">
                         </div>
-                        <div class="lg:col-span-2 space-y-4">
+                        <div class="lg:col-span-2 space-y-4 text-center">
                             <select id="m-visitor" class="w-full p-4 rounded-xl border-2 border-slate-100 font-black text-sm uppercase outline-none"></select>
                             <div class="flex gap-2">
                                 <input type="number" id="y-visitor" placeholder="🟨" class="w-full bg-yellow-50 p-2 rounded-xl text-center font-black">
@@ -182,7 +179,11 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <div>
                         <h2 class="text-2xl font-black text-slate-800 uppercase italic">Tabla de Posiciones</h2>
-                        <div class="mt-2 flex items-center gap-3">
+                        <!-- Nombre de categoría para la imagen -->
+                        <div class="export-title mt-2">
+                            <span id="display-cat-table" class="text-xl font-black text-blue-600 uppercase italic"></span>
+                        </div>
+                        <div class="mt-2 flex items-center gap-3 no-print">
                             <span class="text-[10px] font-black text-slate-400 uppercase">Categoría:</span>
                             <select id="filter-category-table" onchange="updateStandings()" class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none border-none">
                                 <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
@@ -197,6 +198,9 @@
                             </select>
                         </div>
                     </div>
+                    <button onclick="exportToImage('Tabla_AMF.png')" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-blue-700 flex items-center gap-3 no-print">
+                        📸 CAPTURAR IMAGEN
+                    </button>
                 </div>
                 
                 <div class="overflow-x-auto rounded-[2rem] border border-slate-200 shadow-2xl bg-white">
@@ -224,9 +228,14 @@
 
             <!-- SECCIÓN TABLA GENERAL -->
             <div id="general" class="tab-content">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-black text-slate-800 uppercase italic">Tabla General</h2>
-                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Consolidado de todas las categorías</p>
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800 uppercase italic">Tabla General</h2>
+                        <p class="text-slate-400 text-[10px] font-black uppercase">Consolidado de todas las categorías</p>
+                    </div>
+                    <button onclick="exportToImage('Tabla_General_AMF.png')" class="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl no-print">
+                        📸 CAPTURAR IMAGEN
+                    </button>
                 </div>
                 <div class="overflow-hidden rounded-[2rem] border border-slate-200 shadow-2xl bg-white">
                     <table class="w-full text-sm text-left border-collapse">
@@ -245,54 +254,15 @@
     </div>
 
     <script>
-        /* GUÍA DE CONFIGURACIÓN RÁPIDA (PARA TI)
-           ====================================
-           1. CONTRASEÑA ADMIN: Cambia "amf2024" por la que quieras en la variable ADMIN_PASS.
-           2. REPOSITORIO IMÁGENES: Cambia la URL en repoBaseUrl por tu carpeta de GitHub. 
-              Asegúrate de que termine en "/" y que los archivos sean .png
-           3. CATEGORÍAS: Si quieres cambiar nombres de divisiones, busca los <select> en el HTML.
+        /* MANUAL DE CAMBIOS RÁPIDOS PARA TI:
+           ----------------------------------
+           1. CAMBIAR CATEGORÍAS: Busca las etiquetas <select> en el HTML de arriba y cambia los <option>.
+           2. CAMBIAR COLORES: Usa clases de Tailwind como 'bg-blue-600' o 'text-red-500'.
+           3. RESETEAR TODO: Usa el botón "Reiniciar" en la esquina superior derecha.
         */
-
-        const repoBaseUrl = 'https://raw.githubusercontent.com/tu-usuario/tu-repo/main/imagenes/'; 
-        const ADMIN_PASS = "amf2024";
 
         let teams = JSON.parse(localStorage.getItem('amf_db_teams')) || [];
         let matches = JSON.parse(localStorage.getItem('amf_db_matches')) || [];
-
-        function checkAdmin() {
-            const pass = prompt("Ingrese contraseña de administrador:");
-            if(pass === ADMIN_PASS) {
-                document.body.classList.add('is-admin');
-                document.getElementById('btn-login').style.display = 'none';
-                sessionStorage.setItem('amf_admin', 'true');
-            } else {
-                alert("Acceso denegado");
-            }
-        }
-
-        function logout() {
-            document.body.classList.remove('is-admin');
-            document.getElementById('btn-login').style.display = 'block';
-            sessionStorage.removeItem('amf_admin');
-        }
-
-        if(sessionStorage.getItem('amf_admin') === 'true') {
-            document.body.classList.add('is-admin');
-            setTimeout(() => { if(document.getElementById('btn-login')) document.getElementById('btn-login').style.display = 'none'; }, 100);
-        }
-
-        function getBadge(name) {
-            const colors = ['#0f172a', '#1e3a8a', '#b91c1c', '#047857', '#d97706', '#7c3aed', '#db2777', '#2563eb', '#ea580c', '#16a34a', '#4f46e5', '#9333ea'];
-            let h = 0; for(let i=0; i<name.length; i++) h += name.charCodeAt(i) * (i + 1);
-            const fileName = encodeURIComponent(name.trim().toUpperCase()) + '.png';
-            const imgUrl = repoBaseUrl + fileName;
-
-            return `
-                <div class="flex items-center">
-                    <img src="${imgUrl}" class="team-logo" crossorigin="anonymous" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex'">
-                    <span class="team-badge-fallback" style="background-color:${colors[h % colors.length]}; display:none">${name.substring(0,2)}</span>
-                </div>`;
-        }
 
         function showTab(id) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -301,12 +271,16 @@
             document.getElementById('btn-'+id).classList.add('active');
             if(id === 'tabla') updateStandings();
             if(id === 'general') updateGeneralStandings();
-            if(id === 'partidos') updateSelectors();
+            if(id === 'partidos') render();
         }
 
         function addTeam() {
             const name = document.getElementById('new-team-name').value.trim().toUpperCase();
-            if(name && !teams.includes(name)) { teams.push(name); document.getElementById('new-team-name').value = ''; save(); }
+            if(name && !teams.includes(name)) {
+                teams.push(name);
+                document.getElementById('new-team-name').value = '';
+                save();
+            }
         }
 
         function deleteTeam(name) {
@@ -319,8 +293,10 @@
 
         function updateSelectors() {
             const html = teams.map(t => `<option value="${t}">${t}</option>`).join('');
-            document.getElementById('m-local').innerHTML = html;
-            document.getElementById('m-visitor').innerHTML = html;
+            const selLocal = document.getElementById('m-local');
+            const selVis = document.getElementById('m-visitor');
+            if(selLocal) selLocal.innerHTML = html;
+            if(selVis) selVis.innerHTML = html;
         }
 
         function addMatch() {
@@ -351,6 +327,8 @@
 
         function updateStandings() {
             const category = document.getElementById('filter-category-table').value;
+            document.getElementById('display-cat-table').innerText = "Categoría: " + category;
+            
             const table = {};
             teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, y:0, r:0, pts:0 });
             
@@ -369,16 +347,16 @@
                 <tr class="hover:bg-slate-50 transition-all bg-white">
                     <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
                     <td class="p-5 flex items-center uppercase text-slate-700 whitespace-nowrap">${getBadge(s.name)} ${s.name}</td>
-                    <td class="p-3 text-center">${s.pj}</td>
-                    <td class="p-3 text-center">${s.pg}</td>
-                    <td class="p-3 text-center">${s.pe}</td>
-                    <td class="p-3 text-center">${s.pp}</td>
-                    <td class="p-3 text-center">${s.gf}</td>
-                    <td class="p-3 text-center">${s.gc}</td>
+                    <td class="p-3 text-center text-slate-500">${s.pj}</td>
+                    <td class="p-3 text-center text-slate-700">${s.pg}</td>
+                    <td class="p-3 text-center text-slate-700">${s.pe}</td>
+                    <td class="p-3 text-center text-slate-700">${s.pp}</td>
+                    <td class="p-3 text-center text-slate-700">${s.gf}</td>
+                    <td class="p-3 text-center text-slate-700">${s.gc}</td>
                     <td class="p-3 text-center">${s.gf-s.gc}</td>
                     <td class="p-3 text-center text-yellow-600 font-bold">${s.y}</td>
                     <td class="p-3 text-center text-red-600 font-bold">${s.r}</td>
-                    <td class="p-5 text-center bg-blue-600 text-white font-black">${s.pts}</td>
+                    <td class="p-5 text-center bg-blue-600 text-white font-black text-lg">${s.pts}</td>
                 </tr>
             `).join('');
         }
@@ -403,6 +381,12 @@
             `).join('');
         }
 
+        function getBadge(name) {
+            const colors = ['#0f172a', '#1e3a8a', '#b91c1c', '#047857', '#d97706', '#7c3aed', '#db2777', '#2563eb', '#ea580c', '#16a34a', '#4f46e5', '#9333ea'];
+            let h = 0; for(let i=0; i<name.length; i++) h += name.charCodeAt(i) * (i + 1);
+            return `<span class="team-badge" style="background-color:${colors[h % colors.length]}">${name.substring(0,2)}</span>`;
+        }
+
         function save() {
             localStorage.setItem('amf_db_teams', JSON.stringify(teams));
             localStorage.setItem('amf_db_matches', JSON.stringify(matches));
@@ -413,41 +397,40 @@
             document.getElementById('team-grid').innerHTML = teams.map(t => `
                 <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
                     <div class="flex items-center font-black uppercase text-sm">${getBadge(t)} ${t}</div>
-                    <button onclick="deleteTeam('${t}')" class="text-slate-300 hover:text-red-500 no-print admin-only">×</button>
+                    <button onclick="deleteTeam('${t}')" class="text-slate-300 hover:text-red-500 no-print">×</button>
                 </div>
             `).join('');
 
             const filterCat = document.getElementById('filter-category-matches').value;
             const filterRound = document.getElementById('filter-round-matches').value.toLowerCase();
+            document.getElementById('display-cat-matches').innerText = "Categoría: " + filterCat;
             
             let filteredMatches = matches;
             if (filterCat !== "TODAS") filteredMatches = filteredMatches.filter(m => m.category === filterCat);
             if (filterRound !== "") filteredMatches = filteredMatches.filter(m => m.round.toLowerCase().includes(filterRound));
 
             document.getElementById('match-list').innerHTML = [...filteredMatches].reverse().map(m => {
-                let boxColor = "bg-slate-900";
-                if (m.gL === null) boxColor = "bg-slate-100";
+                let lBox = "bg-slate-900", vBox = "bg-slate-900";
+                if (m.gL === null) lBox = vBox = "bg-slate-100";
+                else if (m.gL > m.gV) { lBox = "bg-emerald-600"; vBox = "bg-rose-600"; }
+                else if (m.gV > m.gL) { lBox = "bg-rose-600"; vBox = "bg-emerald-600"; }
+                
                 return `
                 <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between gap-2">
                     <div class="w-32 text-[9px] font-black uppercase text-slate-400">
-                        <p class="text-blue-500 truncate">${m.category}</p>
-                        <p class="text-slate-600 truncate">${m.tour}</p>
-                        <p>${m.round}</p>
+                        <p class="text-blue-500 truncate font-bold">${m.category}</p>
+                        <p class="truncate">${m.round}</p>
                     </div>
-                    <div class="flex-1 text-right font-black uppercase text-sm px-2 flex items-center justify-end">
-                        ${m.local} ${getBadge(m.local)}
-                    </div>
+                    <div class="flex-1 text-right font-black uppercase text-lg px-2 truncate">${m.local}</div>
                     <div class="flex items-center gap-1">
-                        <div class="${boxColor} ${m.gL === null ? 'text-slate-400' : 'text-white'} w-10 py-2 rounded-xl text-center font-black text-xl">${m.gL ?? '-'}</div>
+                        <div class="${lBox} ${m.gL === null ? 'text-slate-400' : 'text-white'} w-12 py-3 rounded-xl text-center font-black text-2xl">${m.gL ?? '-'}</div>
                         <div class="text-slate-300 font-black">-</div>
-                        <div class="${boxColor} ${m.gV === null ? 'text-slate-400' : 'text-white'} w-10 py-2 rounded-xl text-center font-black text-xl">${m.gV ?? '-'}</div>
+                        <div class="${vBox} ${m.gV === null ? 'text-slate-400' : 'text-white'} w-12 py-3 rounded-xl text-center font-black text-2xl">${m.gV ?? '-'}</div>
                     </div>
-                    <div class="flex-1 text-left font-black uppercase text-sm px-2 flex items-center">
-                        ${getBadge(m.visitor)} ${m.visitor}
-                    </div>
-                    <div class="flex gap-2 no-print admin-only">
-                        <button onclick="editMatch(${m.id})" class="text-blue-400 hover:text-blue-600 font-bold">✎</button>
-                        <button onclick="deleteMatch(${m.id})" class="text-slate-200 hover:text-red-500 font-bold">×</button>
+                    <div class="flex-1 text-left font-black uppercase text-lg px-2 truncate">${m.visitor}</div>
+                    <div class="flex gap-2 no-print">
+                        <button onclick="editMatch(${m.id})" class="text-blue-400">✎</button>
+                        <button onclick="deleteMatch(${m.id})" class="text-red-300">×</button>
                     </div>
                 </div>`;
             }).join('');
@@ -456,72 +439,91 @@
             updateSelectors();
         }
 
-        function editMatch(id) {
-            const m = matches.find(x => x.id === id);
-            if (!m) return;
-            document.getElementById('m-category').value = m.category;
-            document.getElementById('m-tournament').value = m.tour;
-            document.getElementById('m-round').value = m.round;
-            document.getElementById('m-local').value = m.local;
-            document.getElementById('m-visitor').value = m.visitor;
-            document.getElementById('g-local').value = m.gL ?? "";
-            document.getElementById('g-visitor').value = m.gV ?? "";
-            matches = matches.filter(x => x.id !== id);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function deleteMatch(id) {
-            if(confirm("¿Eliminar este partido?")) { matches = matches.filter(m => m.id !== id); save(); }
-        }
-
-        async function exportToImage() {
-            const captureArea = document.getElementById('capture-area');
-            const btn = document.getElementById('btn-download');
-            
-            // Efecto visual de carga
+        async function exportToImage(filename) {
+            const area = document.getElementById('capture-area');
+            const btn = event.currentTarget;
             btn.disabled = true;
-            btn.innerText = "GENERANDO IMAGEN...";
+            btn.innerText = "CAPTURA EN CURSO...";
+            
+            // Activar modo exportación
+            area.classList.add('is-exporting');
             document.body.classList.add('is-exporting');
 
-            // Pequeña espera para que el DOM se limpie
-            await new Promise(r => setTimeout(r, 400));
+            // Pequeña pausa para que el DOM se actualice
+            await new Promise(r => setTimeout(r, 300));
 
             try {
-                const canvas = await html2canvas(captureArea, {
-                    scale: 2, // Alta calidad
-                    useCORS: true, // Importante para las imágenes externas
-                    allowTaint: true,
+                const canvas = await html2canvas(area, {
+                    scale: 2,
+                    useCORS: true,
                     backgroundColor: "#f8fafc",
-                    logging: false,
-                    onclone: (clonedDoc) => {
-                        // Asegurar que el área clonada sea visible
-                        clonedDoc.getElementById('capture-area').style.display = 'block';
-                    }
+                    logging: false
                 });
-
-                // Convertir a archivo y descargar
-                const imageData = canvas.toDataURL("image/png");
                 const link = document.createElement('a');
-                link.download = `AMF_REPORTE_${new Date().toLocaleDateString()}.png`;
-                link.href = imageData;
-                document.body.appendChild(link);
+                link.download = filename;
+                link.href = canvas.toDataURL('image/png');
                 link.click();
-                document.body.removeChild(link);
             } catch (err) {
-                console.error("Error capturando imagen:", err);
-                alert("Hubo un error al generar la imagen. Intenta cerrar otras pestañas o usar un navegador diferente.");
+                console.error(err);
+                alert("Error al generar la imagen. Intenta nuevamente.");
             } finally {
+                area.classList.remove('is-exporting');
                 document.body.classList.remove('is-exporting');
                 btn.disabled = false;
-                btn.innerHTML = "📥 Descargar Imagen para Compartir";
+                btn.innerText = "📸 CAPTURAR IMAGEN";
             }
         }
 
-        function resetData() {
-            if(confirm("¿Seguro? Se borrarán todos los clubes y partidos permanentemente.")) { localStorage.clear(); location.reload(); }
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const categories = ["SUB15 FEMENINO", "SUB17 FEMENINO", "1º DIVISION FEMENINIO", "6º DIVISION", "5º DIVISION", "4º DIVISION", "3º DIVISION", "1º DIVISION", "SENIOR"];
+            categories.forEach(cat => {
+                const table = {};
+                teams.forEach(t => table[t] = { Club:t, PJ:0, PG:0, PE:0, PP:0, GF:0, GC:0, DG:0, PTS:0 });
+                matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
+                    const l = table[m.local], v = table[m.visitor];
+                    if(!l || !v) return;
+                    l.PJ++; v.PJ++; l.GF += m.gL; l.GC += m.gV; v.GF += m.gV; v.GC += m.gL;
+                    if(m.gL > m.gV){ l.PG++; l.PTS+=3; v.PP++; }
+                    else if(m.gV > m.gL){ v.PG++; v.pts+=3; l.PP++; }
+                    else { l.PE++; v.pe++; l.PTS+=1; v.pts+=1; }
+                    l.DG = l.GF - l.GC; v.DG = v.GF - v.GC;
+                });
+                const data = Object.values(table).sort((a,b) => b.PTS - a.PTS);
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), cat.substring(0,30));
+            });
+            XLSX.writeFile(wb, "AMF_Tablas_Oficial.xlsx");
         }
 
-        window.onload = render;
+        function importFixture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                jsonData.forEach(row => {
+                    const v = Object.values(row);
+                    if(v[0] && v[3] && v[4]) {
+                        matches.push({
+                            category: v[0].toString().toUpperCase(),
+                            tour: v[1] || "TORNEO", round: v[2] || "FECHA",
+                            local: v[3].toString().toUpperCase(), visitor: v[4].toString().toUpperCase(),
+                            gL: null, gV: null, yL: 0, rL: 0, yV: 0, rV: 0, id: Date.now() + Math.random()
+                        });
+                    }
+                });
+                save();
+                alert("Importación finalizada.");
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function resetData() {
+            if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); }
+        }
+
+        window.onload = () => { render(); updateSelectors(); };
     </script>
 </body>
 </html>
