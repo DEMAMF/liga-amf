@@ -4,98 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Asociación Metropolitana de Fútbol - Sistema Oficial</title>
-    
-    <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-
     <style>
-        /* 1. FUENTES: Aquí puedes cambiar la fuente de Google Fonts.
-           Cambia 'Inter' por 'Roboto', 'Oswald' o la que prefieras. 
-        */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; /* COLOR DE FONDO DE LA PÁGINA (Gris muy claro) */
-        }
-
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-
-        /* ESTILO DE LOS BOTONES DEL MENÚ (Activos) */
-        .tab-button.active { 
-            border-bottom: 4px solid #1e3a8a; /* Color de la línea de abajo (Azul oscuro) */
-            color: #1e3a8a;                   /* Color del texto */
-            background-color: rgba(30, 58, 138, 0.05); /* Fondo suave al estar activo */
-        }
-
+        .tab-button.active { border-bottom: 4px solid #1e3a8a; color: #1e3a8a; background-color: rgba(30, 58, 138, 0.05); }
         .admin-only { display: none !important; }
         body.is-admin .admin-only { display: block !important; }
-
-        /* TAMAÑO DE LOS ESCUDOS */
         .team-logo { width: 28px; height: 28px; object-fit: contain; }
         
-        /* BORDES DE LAS TABLAS */
+        /* Cuadrículas solicitadas */
         table td, table th { border: 1px solid #e2e8f0; }
         
-        /* 2. COLORES DE RESULTADOS: 
-           Cambia estos códigos hexadecimales para personalizar los colores de las tarjetas de partido.
-        */
-        .res-winner { background-color: #1e3a8a !important; color: white !important; } /* GANADOR: Azul Oscuro */
-        .res-loser { background-color: #dc2626 !important; color: white !important; }  /* PERDEDOR: Rojo */
-        .res-draw { background-color: #334155 !important; color: white !important; }   /* EMPATE: Gris Oscuro */
+        /* Colores dinámicos de resultados */
+        .res-winner { background-color: #1e3a8a !important; color: white !important; } /* Azul Oscuro */
+        .res-loser { background-color: #dc2626 !important; color: white !important; }  /* Rojo */
+        .res-draw { background-color: #334155 !important; color: white !important; }   /* Gris Oscuro */
+
+        /* Estilos específicos para el nuevo encabezado de logos apilados */
+        .logo-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .logo-stack img {
+            height: 60px; /* Tamaño ajustado para que quepan dos */
+            width: auto;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
 
-    <!-- 
-        CONTENEDOR PRINCIPAL: 
-        'max-w-5xl' define el ancho de la página. 
-        'md:my-10' es el margen arriba/abajo. 
-    -->
     <div id="main-container" class="max-w-5xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
         
-        <!-- 
-            ENCABEZADO (HEADER):
-            'bg-slate-900' es el fondo negro/azul oscuro.
-            'p-8' es el relleno (padding).
-        -->
+        <!-- HEADER ACTUALIZADO -->
         <div id="pdf-header" class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
-            
-            <!-- Icono Administrador (Invisible hasta pasar el mouse o saber donde está) -->
             <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-white/20 hover:text-blue-400 p-2 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
             </button>
 
-            <!-- LOGO IZQUIERDO Y TÍTULO -->
+            <!-- Izquierda: Logo Liga y Títulos -->
             <div class="flex items-center gap-5">
-                <img id="logo-liga" src="logo_liga.png" alt="Logo AMF" class="h-20 w-auto" onerror="this.src='https://via.placeholder.com/80?text=AMF'">
-                <div class="text-center md:text-left uppercase">
-                    <!-- TAMAÑO DE FUENTE DEL TÍTULO: 'text-2xl' -->
+                <img id="logo-liga" src="logo_liga.png" alt="Logo AMF" class="h-24 w-auto" onerror="this.src='https://via.placeholder.com/100?text=AMF'">
+                <div class="text-left uppercase">
                     <h1 class="text-2xl font-black italic leading-tight">Asociación<br>Metropolitana<br>de Fútbol</h1>
+                    <h2 class="text-blue-400 font-bold text-lg mt-1 italic">Dto. de FUTSAL MAYOR</h2>
                 </div>
             </div>
 
-            <!-- BOTÓN EXPORTAR PDF: 'bg-red-600' (Rojo) -->
+            <!-- Centro: Botón Exportar -->
             <button id="btn-export-global" onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase transition-all shadow-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 PDF Pestaña Actual
             </button>
 
-            <!-- LOGO DERECHO -->
-            <div class="flex items-center">
-                <img id="logo-afa" src="logo_afa.png" alt="Logo AFA" class="h-20 w-auto" onerror="this.src='https://via.placeholder.com/80?text=AFA'">
+            <!-- Derecha: Logo AFA arriba y Consejo Federal abajo -->
+            <div class="logo-stack">
+                <img id="logo-afa" src="logo_afa.png" alt="Logo AFA" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_logo.svg/1200px-Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_logo.svg.png'">
+                <img id="logo-consejo" src="Consejo Federal.png" alt="Logo Consejo Federal" onerror="this.src='https://via.placeholder.com/80?text=C.F.'">
             </div>
         </div>
 
-        <!-- 
-            MENÚ DE NAVEGACIÓN:
-            'text-[11px]' cambia el tamaño de letra de las pestañas.
-            'tracking-widest' añade espacio entre letras.
-        -->
+        <!-- MENU -->
         <nav class="flex border-b border-slate-100 bg-white overflow-x-auto">
             <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Clubes</button>
             <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Resultados</button>
@@ -107,15 +84,13 @@
             
             <!-- SECCIÓN CLUBES -->
             <div id="equipos" class="tab-content active">
-                <!-- PANEL ADMIN: 'bg-slate-50' (Gris claro) -->
                 <div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
                     <div class="flex gap-2">
                         <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase shadow-sm border-none outline-blue-500">
                         <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
-                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset Torneo</button>
+                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset Torneo (Mantener Clubes)</button>
                     </div>
                 </div>
-                <!-- Cuadrícula de Clubes: 'grid-cols-1' en móvil, 'lg:grid-cols-3' en PC -->
                 <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </div>
 
@@ -123,7 +98,6 @@
             <div id="partidos" class="tab-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados</h2>
-                    <!-- FILTROS: 'bg-slate-100' -->
                     <div class="flex gap-2 w-full md:w-auto">
                         <div class="admin-only">
                             <input type="file" id="excel-import" accept=".xlsx, .xls" class="hidden" onchange="importFixture(event)">
@@ -131,7 +105,6 @@
                         </div>
                         <select id="filter-category-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                             <option value="TODAS">Categorías: Todas</option>
-                            <!-- Lista de Categorías -->
                             <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                             <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                             <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -152,7 +125,7 @@
                     </div>
                 </div>
 
-                <!-- FORMULARIO CARGA DE PARTIDOS (ADMIN) -->
+                <!-- FORMULARIO ADMIN CARGA -->
                 <div class="admin-only bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                         <select id="m-category" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm">
@@ -183,8 +156,6 @@
                             </div>
                             <select id="m-visitor" class="flex-1 p-2 font-bold uppercase border rounded"></select>
                         </div>
-                        
-                        <!-- CARGA DE TARJETAS AMARILLAS Y ROJAS -->
                         <div class="grid grid-cols-2 gap-8 border-t pt-4">
                             <div class="flex gap-2">
                                 <div class="flex-1">
@@ -211,7 +182,6 @@
                     <button onclick="addMatch()" class="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg">Guardar Resultado</button>
                 </div>
 
-                <!-- CONTENEDOR DONDE SE DIBUJAN LOS PARTIDOS -->
                 <div id="match-list" class="space-y-3"></div>
             </div>
 
@@ -231,10 +201,8 @@
                         <option value="SENIOR">SENIOR</option>
                     </select>
                 </div>
-                <!-- DISEÑO DE LA TABLA -->
                 <div class="overflow-x-auto rounded-3xl border border-slate-200 shadow-xl bg-white">
                     <table class="w-full text-sm text-left">
-                        <!-- ENCABEZADO DE TABLA: 'bg-slate-900' (Negro), 'text-[10px]' (Tamaño letra) -->
                         <thead class="bg-slate-900 text-white uppercase font-black text-[10px]">
                             <tr>
                                 <th class="p-4 text-center">Pos</th>
@@ -263,8 +231,7 @@
                             <tr>
                                 <th class="p-5 text-center w-20">Pos</th>
                                 <th class="p-5">Club</th>
-                                <!-- Fondo azul para los puntos totales -->
-                                <th class="p-2 text-center bg-blue-900">Acumulados</th>
+                                <th class="p-5 text-center bg-blue-900">Puntos Acumulados</th>
                             </tr>
                         </thead>
                         <tbody id="general-standings-body" class="font-bold divide-y divide-slate-100"></tbody>
@@ -275,17 +242,12 @@
     </div>
 
     <script>
-        /* 3. LÓGICA Y DATOS:
-           - ADMIN_KEY: Clave para editar ("admin123").
-           - teams/matches: Se cargan del almacenamiento del navegador (localStorage).
-        */
         const ADMIN_KEY = "admin123";
         let teams = JSON.parse(localStorage.getItem('amf_db_teams')) || [];
         let matches = JSON.parse(localStorage.getItem('amf_db_matches')) || [];
         let isAdminActive = false;
         let currentTabId = 'equipos';
 
-        // Función para buscar los escudos en la carpeta /escudos/
         function getShield(name) { return `escudos/${name.toUpperCase().trim()}.png`; }
 
         function toggleAdmin() {
@@ -300,7 +262,6 @@
             render();
         }
 
-        // Navegación de pestañas
         function showTab(id) {
             currentTabId = id;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -321,7 +282,6 @@
             }
         }
 
-        // Importación desde Excel
         function importFixture(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -368,7 +328,6 @@
             if(m.local === m.visitor) return alert("Selecciona equipos distintos");
             matches.push(m);
             save();
-            // Resetear campos
             document.getElementById('g-local').value = '';
             document.getElementById('g-visitor').value = '';
             document.getElementById('y-local').value = '0';
@@ -377,7 +336,6 @@
             document.getElementById('r-visitor').value = '0';
         }
 
-        // Procesa los datos para la tabla de posiciones por categoría
         function getTableData(cat) {
             const table = {};
             teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0, ta:0, tr:0 });
@@ -433,14 +391,12 @@
                         <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         <span>${s.name}</span>
                     </td>
-                    <td class="p-5 text-center bg-blue-900 text-white font-black text-[15px] italic">${s.pts}</td>
+                    <td class="p-5 text-center bg-blue-900 text-white font-black text-2xl italic">${s.pts}</td>
                 </tr>
             `).join('');
         }
 
-        // Renderiza la lista de partidos y los selects de equipos
         function render() {
-            // Dibujar cuadrícula de clubes
             document.getElementById('team-grid').innerHTML = teams.sort().map(t => `
                 <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-3">
@@ -455,12 +411,10 @@
             const roundF = document.getElementById('filter-round-matches').value;
             const filtered = matches.filter(m => (catF === "TODAS" || m.category === catF) && (roundF === "TODAS" || m.round === roundF));
 
-            // Dibujar lista de resultados
             document.getElementById('match-list').innerHTML = [...filtered].reverse().map(m => {
                 const isPlayed = m.gL !== null;
                 let classL = "bg-slate-900", classV = "bg-slate-900";
                 
-                // Aplicar colores de ganador/perdedor
                 if(isPlayed) {
                     if(m.gL > m.gV) { classL = "res-winner"; classV = "res-loser"; }
                     else if(m.gV > m.gL) { classV = "res-winner"; classL = "res-loser"; }
@@ -477,7 +431,6 @@
                             <span>${m.local}</span>
                             <img src="${getShield(m.local)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                         </div>
-                        <!-- MARCADOR -->
                         <div class="flex items-center gap-1 mx-4">
                             <div class="${classL} text-white w-10 h-12 flex items-center justify-center rounded-lg font-black text-2xl">${m.gL ?? '-'}</div>
                             <div class="${classV} text-white w-10 h-12 flex items-center justify-center rounded-lg font-black text-2xl">${m.gV ?? '-'}</div>
@@ -488,7 +441,6 @@
                         </div>
                         ${isAdminActive ? `<button onclick="deleteMatch(${m.id})" class="text-red-500 text-[10px] font-bold ml-2">Borrar</button>` : ''}
                     </div>
-                    <!-- INFO DE TARJETAS ABAJO DEL MARCADOR -->
                     <div class="flex justify-center gap-12 border-t pt-3">
                         <div class="flex gap-4 text-[10px] font-bold">
                             <span class="text-yellow-600">TA: ${m.yL || 0}</span>
@@ -507,24 +459,26 @@
             document.getElementById('m-visitor').innerHTML = opts;
         }
 
-        // Exportación a PDF con jsPDF
         async function exportarPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
             
-            // Estilo del encabezado del PDF
-            doc.setFillColor(15, 23, 42); 
+            doc.setFillColor(15, 23, 42); // slate-900
             doc.rect(0, 0, 210, 45, 'F');
             
             doc.setTextColor(255, 255, 255);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(20);
-            doc.text("ASOCIACIÓN METROPOLITANA DE FÚTBOL", 105, 20, { align: "center" });
+            doc.setFontSize(18);
+            doc.text("ASOCIACIÓN METROPOLITANA DE FÚTBOL", 10, 15);
+            doc.setFontSize(14);
+            doc.setTextColor(96, 165, 250); // blue-400
+            doc.text("Dto. de FUTSAL MAYOR", 10, 23);
+            
+            doc.setTextColor(255, 255, 255);
             doc.setFontSize(10);
-            doc.text("SISTEMA OFICIAL DE COMPETENCIA - REPORTE DE " + currentTabId.toUpperCase(), 105, 30, { align: "center" });
-            doc.text("Fecha: " + new Date().toLocaleDateString(), 105, 38, { align: "center" });
+            doc.text("SISTEMA OFICIAL DE COMPETENCIA - REPORTE DE " + currentTabId.toUpperCase(), 10, 32);
+            doc.text("Fecha: " + new Date().toLocaleDateString(), 10, 38);
 
-            // Lógica para decidir qué tabla imprimir según la pestaña activa
             if (currentTabId === 'partidos') {
                 const cat = document.getElementById('filter-category-matches').value;
                 const round = document.getElementById('filter-round-matches').value;
@@ -572,7 +526,6 @@
             doc.save(`AMF_${currentTabId.toUpperCase()}_REPORTE.pdf`);
         }
 
-        // PERSISTENCIA
         function deleteTeam(n) { if(confirm("¿Eliminar club?")) { teams = teams.filter(t => t !== n); save(); } }
         function deleteMatch(id) { matches = matches.filter(m => m.id !== id); save(); }
         function save() {
@@ -588,7 +541,6 @@
             } 
         }
 
-        // Inicio del sistema
         window.onload = () => { render(); showTab('equipos'); };
     </script>
 </body>
