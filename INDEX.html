@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asociación Metropolitana de Fútbol - Sistema Oficial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { border-bottom: 4px solid #2563eb; color: #2563eb; background-color: rgba(37, 99, 235, 0.05); }
+        
+        .team-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            color: white !important;
+            font-weight: 900;
+            font-size: 14px;
+            margin-right: 12px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .is-exporting .no-print { display: none !important; }
+        .is-exporting { padding: 20px !important; background: #f8fafc !important; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+
+    <div id="capture-area" class="max-w-6xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
+        
+        <!-- ENCABEZADO -->
+        <div class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-5">
+                <img src="logo_liga.png" alt="Logo AMF" class="h-24 w-auto object-contain" data-html2canvas-ignore="false">
+                <div class="text-center md:text-left">
+                    <h1 class="text-3xl font-black tracking-tighter italic leading-tight uppercase text-white">
+                        ASOCIACIÓN<br>
+                        METROPOLITANA<br>
+                        DE FÚTBOL
+                    </h1>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-3 no-print">
+                <button onclick="document.getElementById('import-excel').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
+                    Importar Fixture (Excel)
+                </button>
+                <input type="file" id="import-excel" class="hidden" accept=".xlsx, .xls" onchange="importFixture(event)">
+                
+                <button onclick="resetData()" class="bg-white/5 hover:bg-red-500 hover:text-white border border-white/10 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
+                    Reiniciar
+                </button>
+                <button onclick="exportToExcel()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase transition-all">
+                    Excel
+                </button>
+            </div>
+
+            <div class="flex items-center">
+                <img src="logo_afa.png" alt="Logo AFA" class="h-24 w-auto object-contain" data-html2canvas-ignore="false">
+            </div>
+        </div>
+
+        <!-- Navegación -->
+        <nav class="flex border-b border-slate-100 bg-white no-print overflow-x-auto">
+            <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Equipos</button>
+            <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Resultados</button>
+            <button onclick="showTab('tabla')" id="btn-tabla" class="tab-button px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Posiciones</button>
+            <button onclick="showTab('general')" id="btn-general" class="tab-button px-6 py-6 font-black text-[10px] uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">Tabla General</button>
+        </nav>
+
+        <main class="p-4 md:p-10">
+            <!-- SECCIÓN EQUIPOS -->
+            <div id="equipos" class="tab-content active">
+                <div class="max-w-xl mx-auto text-center mb-12 no-print">
+                    <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-4">Registro de Clubes</h2>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-team-name" placeholder="Ej: Club Atlético..." class="flex-1 bg-slate-100 border-2 border-transparent px-6 py-4 rounded-2xl outline-none focus:border-blue-500 focus:bg-white font-bold uppercase text-sm transition-all">
+                        <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-2xl font-black text-xs uppercase shadow-lg shadow-blue-500/30 hover:bg-blue-700">Añadir</button>
+                    </div>
+                </div>
+                <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- SECCIÓN RESULTADOS -->
+            <div id="partidos" class="tab-content">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados</h2>
+                        <div class="mt-2 flex flex-wrap items-center gap-3 no-print">
+                            <span class="text-[10px] font-black text-slate-400 uppercase">Filtros:</span>
+                            <!-- Filtro Categoría -->
+                            <select id="filter-category-matches" onchange="render()" class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none border-none">
+                                <option value="TODAS">Categoría: Todas</option>
+                                <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
+                                <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
+                                <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
+                                <option value="6º DIVISION">6º DIVISION</option>
+                                <option value="5º DIVISION">5º DIVISION</option>
+                                <option value="4º DIVISION">4º DIVISION</option>
+                                <option value="3º DIVISION">3º DIVISION</option>
+                                <option value="1º DIVISION">1º DIVISION</option>
+                                <option value="SENIOR">SENIOR</option>
+                            </select>
+                            <!-- Filtro Fecha (Nuevo) -->
+                            <input type="text" id="filter-round-matches" oninput="render()" placeholder="Filtrar por Fecha..." class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none border-none w-40">
+                        </div>
+                    </div>
+                    <button onclick="exportToImage('AMF_Resultados.png')" class="bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 hover:bg-blue-600 transition-all shadow-xl no-print">
+                        📸 CAPTURAR PARA WHATSAPP
+                    </button>
+                </div>
+
+                <!-- Formulario Carga -->
+                <div class="bg-slate-100 p-8 rounded-[2rem] border border-slate-200 mb-10 no-print">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <select id="m-category" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm uppercase">
+                            <option value="" disabled selected>Seleccionar Categoría</option>
+                            <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
+                            <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
+                            <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
+                            <option value="6º DIVISION">6º DIVISION</option>
+                            <option value="5º DIVISION">5º DIVISION</option>
+                            <option value="4º DIVISION">4º DIVISION</option>
+                            <option value="3º DIVISION">3º DIVISION</option>
+                            <option value="1º DIVISION">1º DIVISION</option>
+                            <option value="SENIOR">SENIOR</option>
+                        </select>
+                        <input type="text" id="m-tournament" placeholder="Torneo" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm">
+                        <input type="text" id="m-round" placeholder="Fecha (Ej: Fecha 1)" class="w-full p-4 rounded-2xl border-none font-bold text-sm shadow-sm">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-7 gap-6 items-center bg-white p-8 rounded-3xl shadow-sm border border-slate-50">
+                        <div class="lg:col-span-2 space-y-4 text-center font-black uppercase">
+                            <select id="m-local" class="w-full p-4 rounded-xl border-2 border-slate-100 font-black text-sm uppercase outline-none focus:border-blue-500"></select>
+                            <div class="flex gap-2">
+                                <input type="number" id="y-local" placeholder="🟨" class="w-full bg-yellow-50 p-2 rounded-xl text-center font-black">
+                                <input type="number" id="r-local" placeholder="🟥" class="w-full bg-red-50 p-2 rounded-xl text-center font-black">
+                            </div>
+                        </div>
+                        <div class="lg:col-span-3 flex items-center justify-center gap-4">
+                            <input type="number" id="g-local" placeholder="-" class="w-16 h-16 bg-slate-900 text-white text-center font-black text-3xl rounded-2xl">
+                            <span class="font-black text-slate-200 text-2xl italic">VS</span>
+                            <input type="number" id="g-visitor" placeholder="-" class="w-16 h-16 bg-slate-900 text-white text-center font-black text-3xl rounded-2xl">
+                        </div>
+                        <div class="lg:col-span-2 space-y-4 text-center font-black uppercase">
+                            <select id="m-visitor" class="w-full p-4 rounded-xl border-2 border-slate-100 font-black text-sm uppercase outline-none focus:border-blue-500"></select>
+                            <div class="flex gap-2">
+                                <input type="number" id="y-visitor" placeholder="🟨" class="w-full bg-yellow-50 p-2 rounded-xl text-center font-black">
+                                <input type="number" id="r-visitor" placeholder="🟥" class="w-full bg-red-50 p-2 rounded-xl text-center font-black">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="addMatch()" class="w-full mt-6 bg-blue-600 text-white py-5 rounded-2xl font-black uppercase text-sm shadow-xl hover:bg-blue-700">
+                        Confirmar Resultado
+                    </button>
+                </div>
+
+                <div id="match-list" class="space-y-4"></div>
+            </div>
+
+            <!-- SECCIÓN TABLA DE POSICIONES -->
+            <div id="tabla" class="tab-content">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800 uppercase italic">Tabla de Posiciones</h2>
+                        <div class="mt-2 flex items-center gap-3">
+                            <span class="text-[10px] font-black text-slate-400 uppercase">Categoría:</span>
+                            <select id="filter-category-table" onchange="updateStandings()" class="bg-slate-100 p-2 rounded-lg font-bold text-xs uppercase outline-none border-none">
+                                <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
+                                <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
+                                <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
+                                <option value="6º DIVISION">6º DIVISION</option>
+                                <option value="5º DIVISION">5º DIVISION</option>
+                                <option value="4º DIVISION">4º DIVISION</option>
+                                <option value="3º DIVISION">3º DIVISION</option>
+                                <option value="1º DIVISION">1º DIVISION</option>
+                                <option value="SENIOR">SENIOR</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="exportToImage('AMF_Tabla_Posiciones.png')" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-blue-700 flex items-center gap-3 no-print">
+                        📸 CAPTURAR PARA WHATSAPP
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto rounded-[2rem] border border-slate-200 shadow-2xl bg-white">
+                    <table class="w-full text-sm text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-slate-900 text-white uppercase font-black text-[10px] tracking-widest">
+                                <th class="p-5 text-center w-16">Pos</th>
+                                <th class="p-5">Club</th>
+                                <th class="p-3 text-center">PJ</th>
+                                <th class="p-3 text-center">PG</th>
+                                <th class="p-3 text-center">PE</th>
+                                <th class="p-3 text-center">PP</th>
+                                <th class="p-3 text-center">GF</th>
+                                <th class="p-3 text-center">GC</th>
+                                <th class="p-3 text-center">DG</th>
+                                <th class="p-3 text-center text-yellow-400">AM</th>
+                                <th class="p-3 text-center text-red-500">RO</th>
+                                <th class="p-5 text-center bg-blue-600 text-white w-24">Puntos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body" class="font-bold divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECCIÓN TABLA GENERAL -->
+            <div id="general" class="tab-content">
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-800 uppercase italic">Tabla General</h2>
+                        <p class="text-slate-400 text-[10px] font-black uppercase">Suma de puntos de todas las categorías</p>
+                    </div>
+                    <button onclick="exportToImage('AMF_Tabla_General.png')" class="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl no-print">
+                        📸 CAPTURAR PARA WHATSAPP
+                    </button>
+                </div>
+                <div class="overflow-hidden rounded-[2rem] border border-slate-200 shadow-2xl bg-white">
+                    <table class="w-full text-sm text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-white uppercase font-black text-[10px] tracking-widest">
+                                <th class="p-5 text-center w-16">Pos</th>
+                                <th class="p-5">Club</th>
+                                <th class="p-5 text-center bg-blue-600 text-white">Puntos Totales</th>
+                            </tr>
+                        </thead>
+                        <tbody id="general-standings-body" class="font-bold divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let teams = JSON.parse(localStorage.getItem('amf_db_teams')) || [];
+        let matches = JSON.parse(localStorage.getItem('amf_db_matches')) || [];
+
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+            if(id === 'tabla') updateStandings();
+            if(id === 'general') updateGeneralStandings();
+            if(id === 'partidos') updateSelectors();
+        }
+
+        function importFixture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                let count = 0;
+                jsonData.forEach(row => {
+                    const values = Object.values(row);
+                    const cat = values[0]?.toString().toUpperCase();
+                    const tour = values[1]?.toString() || "TORNEO";
+                    const round = values[2]?.toString() || "FECHA";
+                    const local = values[3]?.toString().toUpperCase();
+                    const visitor = values[4]?.toString().toUpperCase();
+
+                    if (cat && local && visitor && teams.includes(local) && teams.includes(visitor)) {
+                        matches.push({
+                            category: cat,
+                            tour: tour,
+                            round: round,
+                            local: local,
+                            visitor: visitor,
+                            gL: null,
+                            gV: null,
+                            yL: 0, rL: 0, yV: 0, rV: 0,
+                            id: Date.now() + count
+                        });
+                        count++;
+                    }
+                });
+
+                save();
+                alert(`Se han importado ${count} partidos correctamente.`);
+                event.target.value = "";
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function addTeam() {
+            const name = document.getElementById('new-team-name').value.trim().toUpperCase();
+            if(name && !teams.includes(name)) {
+                teams.push(name);
+                document.getElementById('new-team-name').value = '';
+                save();
+            }
+        }
+
+        function deleteTeam(name) {
+            if(confirm(`¿Eliminar ${name}?`)) {
+                teams = teams.filter(t => t !== name);
+                matches = matches.filter(m => m.local !== name && m.visitor !== name);
+                save();
+            }
+        }
+
+        function updateSelectors() {
+            const html = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('m-local').innerHTML = html;
+            document.getElementById('m-visitor').innerHTML = html;
+        }
+
+        function addMatch() {
+            const cat = document.getElementById('m-category').value;
+            if(!cat) { alert("Seleccione una categoría"); return; }
+            const gL = document.getElementById('g-local').value;
+            const gV = document.getElementById('g-visitor').value;
+
+            const m = {
+                category: cat,
+                tour: document.getElementById('m-tournament').value || 'Torneo AMF',
+                round: document.getElementById('m-round').value || 'Jornada',
+                local: document.getElementById('m-local').value,
+                visitor: document.getElementById('m-visitor').value,
+                gL: gL === "" ? null : parseInt(gL),
+                gV: gV === "" ? null : parseInt(gV),
+                yL: parseInt(document.getElementById('y-local').value) || 0,
+                rL: parseInt(document.getElementById('r-local').value) || 0,
+                yV: parseInt(document.getElementById('y-visitor').value) || 0,
+                rV: parseInt(document.getElementById('r-visitor').value) || 0,
+                id: Date.now()
+            };
+            if(!m.local || !m.visitor || m.local === m.visitor) return;
+            matches.push(m);
+            save();
+            ['g-local','g-visitor','y-local','r-local','y-visitor','r-visitor'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        function updateStandings() {
+            const category = document.getElementById('filter-category-table').value;
+            const table = {};
+            teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, y:0, r:0, pts:0 });
+            
+            matches.filter(m => m.category === category && m.gL !== null && m.gV !== null).forEach(m => {
+                const l = table[m.local], v = table[m.visitor];
+                if(!l || !v) return;
+                l.pj++; v.pj++; l.gf += m.gL; l.gc += m.gV; v.gf += m.gV; v.gc += m.gL;
+                l.y += m.yL; l.r += m.rL; v.y += m.yV; v.r += m.rV;
+                if(m.gL > m.gV){ l.pg++; l.pts+=3; v.pp++; }
+                else if(m.gV > m.gL){ v.pg++; v.pts+=3; l.pp++; }
+                else { l.pe++; v.pe++; l.pts+=1; v.pts+=1; }
+            });
+
+            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc));
+            document.getElementById('standings-body').innerHTML = sorted.map((s, i) => `
+                <tr class="hover:bg-slate-50 transition-all bg-white">
+                    <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-5 flex items-center uppercase text-slate-700 whitespace-nowrap">${getBadge(s.name)} ${s.name}</td>
+                    <td class="p-3 text-center text-slate-500">${s.pj}</td>
+                    <td class="p-3 text-center text-slate-700">${s.pg}</td>
+                    <td class="p-3 text-center text-slate-700">${s.pe}</td>
+                    <td class="p-3 text-center text-slate-700">${s.pp}</td>
+                    <td class="p-3 text-center text-slate-700">${s.gf}</td>
+                    <td class="p-3 text-center text-slate-700">${s.gc}</td>
+                    <td class="p-3 text-center">${s.gf-s.gc}</td>
+                    <td class="p-3 text-center text-yellow-600 font-bold">${s.y}</td>
+                    <td class="p-3 text-center text-red-600 font-bold">${s.r}</td>
+                    <td class="p-5 text-center bg-blue-600 text-white font-black text-lg">${s.pts}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateGeneralStandings() {
+            const table = {};
+            teams.forEach(t => table[t] = { name:t, pts:0 });
+            matches.filter(m => m.gL !== null && m.gV !== null).forEach(m => {
+                const l = table[m.local], v = table[m.visitor];
+                if(!l || !v) return;
+                if(m.gL > m.gV) l.pts += 3;
+                else if(m.gV > m.gL) v.pts += 3;
+                else { l.pts += 1; v.pts += 1; }
+            });
+            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts);
+            document.getElementById('general-standings-body').innerHTML = sorted.map((s, i) => `
+                <tr class="hover:bg-slate-50 transition-all bg-white">
+                    <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-5 flex items-center uppercase text-slate-700">${getBadge(s.name)} ${s.name}</td>
+                    <td class="p-5 text-center bg-blue-600 text-white font-black text-xl">${s.pts}</td>
+                </tr>
+            `).join('');
+        }
+
+        function getBadge(name) {
+            const colors = ['#0f172a', '#1e3a8a', '#b91c1c', '#047857', '#d97706', '#7c3aed', '#db2777', '#2563eb', '#ea580c', '#16a34a', '#4f46e5', '#9333ea'];
+            let h = 0; 
+            for(let i=0; i<name.length; i++) h += name.charCodeAt(i) * (i + 1);
+            return `<span class="team-badge" style="background-color:${colors[h % colors.length]}">${name.substring(0,2)}</span>`;
+        }
+
+        function save() {
+            localStorage.setItem('amf_db_teams', JSON.stringify(teams));
+            localStorage.setItem('amf_db_matches', JSON.stringify(matches));
+            render();
+        }
+
+        function render() {
+            document.getElementById('team-grid').innerHTML = teams.map(t => `
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center">
+                    <div class="flex items-center font-black uppercase text-sm">${getBadge(t)} ${t}</div>
+                    <button onclick="deleteTeam('${t}')" class="text-slate-300 hover:text-red-500 no-print">×</button>
+                </div>
+            `).join('');
+
+            const filterCat = document.getElementById('filter-category-matches').value;
+            const filterRound = document.getElementById('filter-round-matches').value.toLowerCase(); // Nuevo filtro fecha
+            
+            // Aplicamos ambos filtros: Categoría y Fecha
+            let filteredMatches = matches;
+            if (filterCat !== "TODAS") {
+                filteredMatches = filteredMatches.filter(m => m.category === filterCat);
+            }
+            if (filterRound !== "") {
+                filteredMatches = filteredMatches.filter(m => m.round.toLowerCase().includes(filterRound));
+            }
+
+            document.getElementById('match-list').innerHTML = [...filteredMatches].reverse().map(m => {
+                // Lógica de colores del recuadro
+                let localBoxColor = "bg-slate-900", visitorBoxColor = "bg-slate-900";
+                if (m.gL === null) { 
+                    localBoxColor = visitorBoxColor = "bg-slate-100"; 
+                } else if (m.gL > m.gV) { 
+                    localBoxColor = "bg-emerald-600"; visitorBoxColor = "bg-rose-600"; 
+                } else if (m.gV > m.gL) { 
+                    localBoxColor = "bg-rose-600"; visitorBoxColor = "bg-emerald-600"; 
+                } else { 
+                    localBoxColor = "bg-slate-700"; visitorBoxColor = "bg-slate-700"; 
+                }
+
+                // Ajuste de color del TEXTO de los goles (ahora blanco)
+                // Buscá "text-white" abajo para cambiar el color del número
+                return `
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between gap-2">
+                    <div class="w-32 text-[9px] font-black uppercase text-slate-400">
+                        <p class="text-blue-500 truncate">${m.category}</p>
+                        <p class="text-slate-600 truncate">${m.tour}</p>
+                        <p>${m.round}</p>
+                    </div>
+                    <div class="flex-1 text-right font-black uppercase text-lg px-2 truncate">${m.local}</div>
+                    <div class="flex items-center gap-1">
+                        <!-- COLOR DEL GOLES: Cambié text-slate-400 por text-white -->
+                        <div class="${localBoxColor} ${m.gL === null ? 'text-slate-400' : 'text-white'} w-12 py-3 rounded-xl text-center font-black text-2xl">${m.gL ?? '-'}</div>
+                        <div class="text-slate-300 font-black">-</div>
+                        <div class="${visitorBoxColor} ${m.gV === null ? 'text-slate-400' : 'text-white'} w-12 py-3 rounded-xl text-center font-black text-2xl">${m.gV ?? '-'}</div>
+                    </div>
+                    <div class="flex-1 text-left font-black uppercase text-lg px-2 truncate">${m.visitor}</div>
+                    <div class="flex gap-2 no-print">
+                        <button onclick="editMatch(${m.id})" class="text-blue-400 hover:text-blue-600 font-bold">✎</button>
+                        <button onclick="deleteMatch(${m.id})" class="text-slate-200 hover:text-red-500 font-bold">×</button>
+                    </div>
+                </div>
+            `}).join('');
+            
+            updateStandings();
+            updateSelectors();
+        }
+
+        function editMatch(id) {
+            const m = matches.find(x => x.id === id);
+            if (!m) return;
+            document.getElementById('m-category').value = m.category;
+            document.getElementById('m-tournament').value = m.tour;
+            document.getElementById('m-round').value = m.round;
+            document.getElementById('m-local').value = m.local;
+            document.getElementById('m-visitor').value = m.visitor;
+            document.getElementById('g-local').value = m.gL ?? "";
+            document.getElementById('g-visitor').value = m.gV ?? "";
+            matches = matches.filter(x => x.id !== id);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteMatch(id) {
+            if(confirm("¿Eliminar este partido?")) {
+                matches = matches.filter(m => m.id !== id);
+                save();
+            }
+        }
+
+        async function exportToImage(filename) {
+            const area = document.getElementById('capture-area');
+            const btn = event.currentTarget;
+            const originalText = btn.innerText;
+            btn.innerText = "GENERANDO...";
+            area.classList.add('is-exporting');
+            try {
+                const canvas = await html2canvas(area, { scale: 3, useCORS: true, backgroundColor: "#f8fafc" });
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error(err);
+                alert("Error en captura.");
+            } finally {
+                area.classList.remove('is-exporting');
+                btn.innerText = originalText;
+            }
+        }
+
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const categories = ["SUB15 FEMENINO", "SUB17 FEMENINO", "1º DIVISION FEMENINIO", "6º DIVISION", "5º DIVISION", "4º DIVISION", "3º DIVISION", "1º DIVISION", "SENIOR"];
+            categories.forEach(cat => {
+                const table = {};
+                teams.forEach(t => table[t] = { Club:t, PJ:0, PG:0, PE:0, PP:0, GF:0, GC:0, DG:0, PTS:0 });
+                matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
+                    const l = table[m.local], v = table[m.visitor];
+                    if(!l || !v) return;
+                    l.PJ++; v.PJ++; l.GF += m.gL; l.GC += m.gV; v.GF += m.gV; v.GC += m.gL;
+                    if(m.gL > m.gV){ l.PG++; l.PTS+=3; v.PP++; }
+                    else if(m.gV > m.gL){ v.PG++; v.PTS+=3; l.PP++; }
+                    else { l.PE++; v.PE++; l.PTS+=1; v.pts+=1; }
+                    l.DG = l.GF - l.GC; v.DG = v.GF - v.GC;
+                });
+                const data = Object.values(table).sort((a,b) => b.PTS - a.PTS);
+                const ws = XLSX.utils.json_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, cat.substring(0,30));
+            });
+            XLSX.writeFile(wb, "AMF_Tablas.xlsx");
+        }
+
+        function resetData() {
+            if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); }
+        }
+
+        window.onload = render;
+    </script>
+</body>
+</html>
