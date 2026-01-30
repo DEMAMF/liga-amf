@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asociación Metropolitana de Fútbol - Sistema Oficial</title>
+    <title>AMF - Sistema Oficial Cloud</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -17,40 +17,24 @@
         .admin-only { display: none !important; }
         body.is-admin .admin-only { display: block !important; }
         .team-logo { width: 28px; height: 28px; object-fit: contain; }
-        
-        /* Cuadrículas solicitadas */
         table td, table th { border: 1px solid #e2e8f0; }
-        
-        /* Colores dinámicos de resultados */
-        .res-winner { background-color: #1e3a8a !important; color: white !important; } /* Azul Oscuro */
-        .res-loser { background-color: #dc2626 !important; color: white !important; }  /* Rojo */
-        .res-draw { background-color: #334155 !important; color: white !important; }   /* Gris Oscuro */
-
-        /* Estilos específicos para el nuevo encabezado de logos apilados */
-        .logo-stack {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 10px;
-        }
-        .logo-stack img {
-            height: 60px; /* Tamaño ajustado para que quepan dos */
-            width: auto;
-            object-fit: contain;
-        }
+        .res-winner { background-color: #1e3a8a !important; color: white !important; }
+        .res-loser { background-color: #dc2626 !important; color: white !important; }
+        .res-draw { background-color: #334155 !important; color: white !important; }
+        .logo-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        .logo-stack img { height: 60px; width: auto; object-fit: contain; }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
 
     <div id="main-container" class="max-w-5xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
         
-        <!-- HEADER ACTUALIZADO -->
+        <!-- HEADER -->
         <div id="pdf-header" class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
             <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-white/20 hover:text-blue-400 p-2 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
             </button>
 
-            <!-- Izquierda: Logo Liga y Títulos -->
             <div class="flex items-center gap-5">
                 <img id="logo-liga" src="logo_liga.png" alt="Logo AMF" class="h-24 w-auto" onerror="this.src='https://via.placeholder.com/100?text=AMF'">
                 <div class="text-left uppercase">
@@ -59,13 +43,11 @@
                 </div>
             </div>
 
-            <!-- Centro: Botón Exportar -->
             <button id="btn-export-global" onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase transition-all shadow-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                PDF Pestaña Actual
+                PDF Reporte
             </button>
 
-            <!-- Derecha: Logo AFA arriba y Consejo Federal abajo -->
             <div class="logo-stack">
                 <img id="logo-afa" src="logo_afa.png" alt="Logo AFA" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_logo.svg/1200px-Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_logo.svg.png'">
                 <img id="logo-consejo" src="Consejo Federal.png" alt="Logo Consejo Federal" onerror="this.src='https://via.placeholder.com/80?text=C.F.'">
@@ -77,33 +59,32 @@
             <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Clubes</button>
             <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Resultados</button>
             <button onclick="showTab('tabla')" id="btn-tabla" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Posiciones</button>
-            <button onclick="showTab('general')" id="btn-general" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Tabla General</button>
+            <button onclick="showTab('general')" id="btn-general" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">General</button>
         </nav>
 
         <main class="p-6 md:p-10">
-            
-            <!-- SECCIÓN CLUBES -->
+            <!-- PESTAÑA EQUIPOS -->
             <div id="equipos" class="tab-content active">
                 <div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
                     <div class="flex gap-2">
-                        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase shadow-sm border-none outline-blue-500">
+                        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase border border-slate-200">
                         <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
-                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset Torneo (Mantener Clubes)</button>
+                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs">Reset Datos</button>
                     </div>
                 </div>
                 <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </div>
 
-            <!-- SECCIÓN RESULTADOS -->
+            <!-- PESTAÑA PARTIDOS -->
             <div id="partidos" class="tab-content">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados</h2>
                     <div class="flex gap-2 w-full md:w-auto">
                         <div class="admin-only">
                             <input type="file" id="excel-import" accept=".xlsx, .xls" class="hidden" onchange="importFixture(event)">
-                            <button onclick="document.getElementById('excel-import').click()" class="bg-green-600 text-white p-3 rounded-xl font-bold text-[10px] uppercase">Importar Fixture</button>
+                            <button onclick="document.getElementById('excel-import').click()" class="bg-green-600 text-white p-3 rounded-xl font-bold text-[10px] uppercase">Importar</button>
                         </div>
-                        <select id="filter-category-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                        <select id="filter-category-matches" onchange="renderMatches()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                             <option value="TODAS">Categorías: Todas</option>
                             <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                             <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
@@ -115,20 +96,17 @@
                             <option value="1º DIVISION">1º DIVISION</option>
                             <option value="SENIOR">SENIOR</option>
                         </select>
-                        <select id="filter-round-matches" onchange="render()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                        <select id="filter-round-matches" onchange="renderMatches()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                             <option value="TODAS">Fechas: Todas</option>
-                            <option value="FECHA 1">FECHA 1</option><option value="FECHA 2">FECHA 2</option><option value="FECHA 3">FECHA 3</option>
-                            <option value="FECHA 4">FECHA 4</option><option value="FECHA 5">FECHA 5</option><option value="FECHA 6">FECHA 6</option>
-                            <option value="FECHA 7">FECHA 7</option><option value="FECHA 8">FECHA 8</option><option value="FECHA 9">FECHA 9</option>
-                            <option value="FECHA 10">FECHA 10</option>
+                            <option value="FECHA 1">FECHA 1</option><option value="FECHA 2">FECHA 2</option>
+                            <option value="FECHA 3">FECHA 3</option><option value="FECHA 4">FECHA 4</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- FORMULARIO ADMIN CARGA -->
                 <div class="admin-only bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                        <select id="m-category" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm">
+                        <select id="m-category" class="p-3 rounded-xl font-bold text-xs uppercase border border-blue-200">
                             <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                             <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                             <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -139,43 +117,25 @@
                             <option value="1º DIVISION">1º DIVISION</option>
                             <option value="SENIOR">SENIOR</option>
                         </select>
-                        <input type="text" id="m-round" placeholder="Ej: FECHA 1" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm">
-                        <input type="text" id="m-tournament" value="TORNEO OFICIAL" class="p-3 rounded-xl font-bold text-xs uppercase shadow-sm">
+                        <input type="text" id="m-round" placeholder="Ej: FECHA 1" class="p-3 rounded-xl font-bold text-xs uppercase border border-blue-200">
+                        <input type="text" id="m-tournament" value="TORNEO OFICIAL" class="p-3 rounded-xl font-bold text-xs uppercase border border-blue-200">
                     </div>
-                    <div class="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-sm">
+                    <div class="flex flex-col gap-4 bg-white p-6 rounded-xl border border-blue-100">
                         <div class="flex items-center gap-4">
                             <select id="m-local" class="flex-1 p-2 font-bold uppercase border rounded"></select>
-                            <div class="flex flex-col items-center">
-                                <label class="text-[9px] font-black uppercase mb-1">Goles</label>
-                                <input type="number" id="g-local" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-100 rounded p-2">
-                            </div>
-                            <span class="font-black text-slate-300 italic self-end pb-2">VS</span>
-                            <div class="flex flex-col items-center">
-                                <label class="text-[9px] font-black uppercase mb-1">Goles</label>
-                                <input type="number" id="g-visitor" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-100 rounded p-2">
-                            </div>
+                            <input type="number" id="g-local" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-50 border rounded p-2">
+                            <span class="font-black text-slate-300 italic">VS</span>
+                            <input type="number" id="g-visitor" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-50 border rounded p-2">
                             <select id="m-visitor" class="flex-1 p-2 font-bold uppercase border rounded"></select>
                         </div>
-                        <div class="grid grid-cols-2 gap-8 border-t pt-4">
+                        <div class="grid grid-cols-2 gap-4 border-t pt-4">
                             <div class="flex gap-2">
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-yellow-600 block mb-1">AMARILLAS L</label>
-                                    <input type="number" id="y-local" value="0" class="w-full p-2 bg-yellow-50 rounded font-bold text-center">
-                                </div>
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-red-600 block mb-1">ROJAS L</label>
-                                    <input type="number" id="r-local" value="0" class="w-full p-2 bg-red-50 rounded font-bold text-center">
-                                </div>
+                                <input type="number" id="y-local" placeholder="TA L" class="w-full p-2 bg-yellow-50 rounded text-center font-bold" title="Amarillas Local">
+                                <input type="number" id="r-local" placeholder="TR L" class="w-full p-2 bg-red-50 rounded text-center font-bold" title="Rojas Local">
                             </div>
                             <div class="flex gap-2">
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-yellow-600 block mb-1">AMARILLAS V</label>
-                                    <input type="number" id="y-visitor" value="0" class="w-full p-2 bg-yellow-50 rounded font-bold text-center">
-                                </div>
-                                <div class="flex-1">
-                                    <label class="text-[9px] font-black text-red-600 block mb-1">ROJAS V</label>
-                                    <input type="number" id="r-visitor" value="0" class="w-full p-2 bg-red-50 rounded font-bold text-center">
-                                </div>
+                                <input type="number" id="y-visitor" placeholder="TA V" class="w-full p-2 bg-yellow-50 rounded text-center font-bold" title="Amarillas Visita">
+                                <input type="number" id="r-visitor" placeholder="TR V" class="w-full p-2 bg-red-50 rounded text-center font-bold" title="Rojas Visita">
                             </div>
                         </div>
                     </div>
@@ -185,11 +145,11 @@
                 <div id="match-list" class="space-y-3"></div>
             </div>
 
-            <!-- SECCIÓN POSICIONES -->
+            <!-- PESTAÑA TABLA -->
             <div id="tabla" class="tab-content">
                 <div class="mb-8 flex justify-between items-center">
                     <h2 class="text-2xl font-black text-slate-800 uppercase italic">Posiciones</h2>
-                    <select id="filter-category-table" onchange="updateStandings()" class="bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
+                    <select id="filter-category-table" onchange="updateStandingsUI()" class="bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
                         <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
                         <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
                         <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
@@ -222,7 +182,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN GENERAL -->
+            <!-- PESTAÑA GENERAL -->
             <div id="general" class="tab-content">
                 <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-8">Tabla General de Clubes</h2>
                 <div class="overflow-hidden rounded-3xl border border-slate-200 shadow-xl bg-white">
@@ -241,16 +201,78 @@
         </main>
     </div>
 
-    <script>
-        const ADMIN_KEY = "admin123";
-        let teams = JSON.parse(localStorage.getItem('amf_db_teams')) || [];
-        let matches = JSON.parse(localStorage.getItem('amf_db_matches')) || [];
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Firebase Initialization
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'amf-manager-v2';
+
+        // Global State
+        let teams = [];
+        let matches = [];
+        let user = null;
         let isAdminActive = false;
         let currentTabId = 'equipos';
 
-        function getShield(name) { return `escudos/${name.toUpperCase().trim()}.png`; }
+        const ADMIN_KEY = "admin123";
 
-        function toggleAdmin() {
+        // Authentication Logic (MANDATORY RULE 3: Auth before Queries)
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Authentication failed:", e);
+            }
+        };
+
+        // Auth State Listener
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (u) {
+                console.log("Authenticated successfully:", u.uid);
+                setupListeners();
+            } else {
+                console.log("User signed out.");
+            }
+        });
+
+        // Data Listeners
+        const setupListeners = () => {
+            if (!user) return; // Guard
+
+            // Listen for Teams (RULE 1: Correct Path)
+            const teamsRef = collection(db, 'artifacts', appId, 'public', 'data', 'teams');
+            onSnapshot(teamsRef, (snap) => {
+                teams = snap.docs.map(doc => doc.data().name);
+                renderTeams();
+                updateSelects();
+                if(currentTabId === 'tabla') updateStandingsUI();
+                if(currentTabId === 'general') updateGeneralUI();
+            }, (err) => console.error("Teams listener error:", err));
+
+            // Listen for Matches (RULE 1: Correct Path)
+            const matchesRef = collection(db, 'artifacts', appId, 'public', 'data', 'matches');
+            onSnapshot(matchesRef, (snap) => {
+                matches = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                renderMatches();
+                if(currentTabId === 'tabla') updateStandingsUI();
+                if(currentTabId === 'general') updateGeneralUI();
+            }, (err) => console.error("Matches listener error:", err));
+        };
+
+        // UI Handlers
+        window.toggleAdmin = () => {
             const pass = prompt("Acceso Administrador:");
             if(pass === ADMIN_KEY) {
                 isAdminActive = true;
@@ -259,58 +281,38 @@
                 isAdminActive = false;
                 document.body.classList.remove('is-admin');
             }
-            render();
-        }
+            renderTeams();
+            renderMatches();
+        };
 
-        function showTab(id) {
+        window.showTab = (id) => {
             currentTabId = id;
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('btn-'+id).classList.add('active');
-            if(id === 'tabla') updateStandings();
-            if(id === 'general') updateGeneralStandings();
-            if(id === 'partidos') render();
-        }
+            if(id === 'tabla') updateStandingsUI();
+            if(id === 'general') updateGeneralUI();
+        };
 
-        function addTeam() {
-            const val = document.getElementById('new-team-name').value.trim().toUpperCase();
-            if(val && !teams.includes(val)) {
-                teams.push(val);
+        const getShield = (name) => `escudos/${name.toUpperCase().trim()}.png`;
+
+        window.addTeam = async () => {
+            if(!user) return;
+            const name = document.getElementById('new-team-name').value.trim().toUpperCase();
+            if(name && !teams.includes(name)) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', name), { name });
                 document.getElementById('new-team-name').value = '';
-                save();
             }
-        }
+        };
 
-        function importFixture(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet);
-                
-                rows.forEach(row => {
-                    if(row.LOCAL && row.VISITANTE) {
-                        matches.push({
-                            category: row.CATEGORIA || "1º DIVISION",
-                            round: row.FECHA || "FECHA",
-                            tour: "TORNEO OFICIAL",
-                            local: row.LOCAL.toString().toUpperCase().trim(),
-                            visitor: row.VISITANTE.toString().toUpperCase().trim(),
-                            gL: null, gV: null, yL: 0, rL: 0, yV: 0, rV: 0,
-                            id: Date.now() + Math.random()
-                        });
-                    }
-                });
-                save();
-                alert("Fixture Importado con éxito.");
-            };
-            reader.readAsArrayBuffer(file);
-        }
+        window.deleteTeam = async (name) => {
+            if(!user || !confirm("¿Eliminar club y todos sus registros?")) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', name));
+        };
 
-        function addMatch() {
+        window.addMatch = async () => {
+            if(!user) return;
             const m = {
                 category: document.getElementById('m-category').value,
                 round: document.getElementById('m-round').value.toUpperCase() || 'FECHA',
@@ -323,81 +325,61 @@
                 rL: parseInt(document.getElementById('r-local').value) || 0,
                 yV: parseInt(document.getElementById('y-visitor').value) || 0,
                 rV: parseInt(document.getElementById('r-visitor').value) || 0,
-                id: Date.now()
+                timestamp: Date.now()
             };
             if(m.local === m.visitor) return alert("Selecciona equipos distintos");
-            matches.push(m);
-            save();
-            document.getElementById('g-local').value = '';
-            document.getElementById('g-visitor').value = '';
-            document.getElementById('y-local').value = '0';
-            document.getElementById('r-local').value = '0';
-            document.getElementById('y-visitor').value = '0';
-            document.getElementById('r-visitor').value = '0';
-        }
+            
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'matches'), m);
+            
+            // Clean inputs
+            ['g-local','g-visitor','y-local','r-local','y-visitor','r-visitor'].forEach(id => document.getElementById(id).value = id.startsWith('g') ? '' : '0');
+        };
 
-        function getTableData(cat) {
-            const table = {};
-            teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0, ta:0, tr:0 });
-            matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
-                const l = table[m.local], v = table[m.visitor];
-                if(!l || !v) return;
-                l.pj++; v.pj++; l.gf += m.gL; l.gc += m.gV; v.gf += m.gV; v.gc += m.gL;
-                l.ta += (m.yL || 0); l.tr += (m.rL || 0);
-                v.ta += (m.yV || 0); v.tr += (m.rV || 0);
-                if(m.gL > m.gV){ l.pg++; l.pts+=3; v.pp++; }
-                else if(m.gV > m.gL){ v.pg++; v.pts+=3; l.pp++; }
-                else { l.pe++; v.pe++; l.pts+=1; v.pts+=1; }
-            });
-            return Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc));
-        }
+        window.deleteMatch = async (id) => {
+            if(!user || !confirm("¿Borrar este resultado?")) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', id));
+        };
 
-        function updateStandings() {
-            const cat = document.getElementById('filter-category-table').value;
-            const sorted = getTableData(cat);
-            document.getElementById('standings-body').innerHTML = sorted.map((s, i) => `
-                <tr class="bg-white">
-                    <td class="p-4 text-center text-slate-400 font-black">${i+1}</td>
-                    <td class="p-4 flex items-center gap-3 font-black uppercase italic">
-                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                        <span>${s.name}</span>
-                    </td>
-                    <td class="p-2 text-center">${s.pj}</td>
-                    <td class="p-2 text-center text-blue-700">${s.pg}</td>
-                    <td class="p-2 text-center text-slate-500">${s.pe}</td>
-                    <td class="p-2 text-center text-red-700">${s.pp}</td>
-                    <td class="p-2 text-center">${s.gf - s.gc}</td>
-                    <td class="p-2 text-center bg-yellow-50 text-yellow-700 font-bold">${s.ta}</td>
-                    <td class="p-2 text-center bg-red-50 text-red-700 font-bold">${s.tr}</td>
-                    <td class="p-4 text-center bg-blue-900 text-white font-black text-lg">${s.pts}</td>
-                </tr>
-            `).join('');
-        }
-
-        function updateGeneralStandings() {
-            const table = {};
-            teams.forEach(t => table[t] = { name:t, pts:0 });
-            matches.filter(m => m.gL !== null).forEach(m => {
-                const l = table[m.local], v = table[m.visitor];
-                if(l && v) {
-                    if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
+        window.importFixture = async (event) => {
+            if(!user) return;
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                
+                for(let row of rows) {
+                    if(row.LOCAL && row.VISITANTE) {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'matches'), {
+                            category: row.CATEGORIA || "1º DIVISION",
+                            round: row.FECHA || "FECHA",
+                            tour: "TORNEO OFICIAL",
+                            local: row.LOCAL.toString().toUpperCase().trim(),
+                            visitor: row.VISITANTE.toString().toUpperCase().trim(),
+                            gL: null, gV: null, yL: 0, rL: 0, yV: 0, rV: 0,
+                            timestamp: Date.now()
+                        });
+                    }
                 }
-            });
-            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts);
-            document.getElementById('general-standings-body').innerHTML = sorted.map((s, i) => `
-                <tr class="bg-white">
-                    <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
-                    <td class="p-5 flex items-center gap-4 font-black uppercase italic">
-                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                        <span>${s.name}</span>
-                    </td>
-                    <td class="p-5 text-center bg-blue-900 text-white font-black text-2xl italic">${s.pts}</td>
-                </tr>
-            `).join('');
-        }
+                alert("Fixture Importado.");
+            };
+            reader.readAsArrayBuffer(file);
+        };
 
-        function render() {
-            document.getElementById('team-grid').innerHTML = teams.sort().map(t => `
+        window.resetGeneralData = async () => {
+            if(!user || !confirm("Se borrarán TODOS los resultados. Los clubes se mantienen.")) return;
+            for(let m of matches) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', m.id));
+            }
+        };
+
+        // Rendering functions
+        const renderTeams = () => {
+            const grid = document.getElementById('team-grid');
+            if(!grid) return;
+            grid.innerHTML = teams.sort().map(t => `
                 <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-3">
                         <img src="${getShield(t)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
@@ -406,15 +388,16 @@
                     ${isAdminActive ? `<button onclick="deleteTeam('${t}')" class="text-red-400 font-bold px-2">X</button>` : ''}
                 </div>
             `).join('');
+        };
 
+        window.renderMatches = () => {
             const catF = document.getElementById('filter-category-matches').value;
             const roundF = document.getElementById('filter-round-matches').value;
             const filtered = matches.filter(m => (catF === "TODAS" || m.category === catF) && (roundF === "TODAS" || m.round === roundF));
 
-            document.getElementById('match-list').innerHTML = [...filtered].reverse().map(m => {
+            document.getElementById('match-list').innerHTML = [...filtered].sort((a,b) => b.timestamp - a.timestamp).map(m => {
                 const isPlayed = m.gL !== null;
                 let classL = "bg-slate-900", classV = "bg-slate-900";
-                
                 if(isPlayed) {
                     if(m.gL > m.gV) { classL = "res-winner"; classV = "res-loser"; }
                     else if(m.gV > m.gL) { classV = "res-winner"; classL = "res-loser"; }
@@ -439,7 +422,7 @@
                             <img src="${getShield(m.visitor)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
                             <span>${m.visitor}</span>
                         </div>
-                        ${isAdminActive ? `<button onclick="deleteMatch(${m.id})" class="text-red-500 text-[10px] font-bold ml-2">Borrar</button>` : ''}
+                        ${isAdminActive ? `<button onclick="deleteMatch('${m.id}')" class="text-red-500 text-[10px] font-bold ml-2">X</button>` : ''}
                     </div>
                     <div class="flex justify-center gap-12 border-t pt-3">
                         <div class="flex gap-4 text-[10px] font-bold">
@@ -453,96 +436,128 @@
                     </div>
                 </div>
             `}).join('');
+        };
 
+        const updateSelects = () => {
             const opts = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
             document.getElementById('m-local').innerHTML = opts;
             document.getElementById('m-visitor').innerHTML = opts;
-        }
+        };
 
-        async function exportarPDF() {
+        const getTableData = (cat) => {
+            const table = {};
+            teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0, ta:0, tr:0 });
+            matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
+                const l = table[m.local], v = table[m.visitor];
+                if(!l || !v) return;
+                l.pj++; v.pj++; l.gf += m.gL; l.gc += m.gV; v.gf += m.gV; v.gc += m.gL;
+                l.ta += (m.yL || 0); l.tr += (m.rL || 0);
+                v.ta += (m.yV || 0); v.tr += (m.rV || 0);
+                if(m.gL > m.gV){ l.pg++; l.pts+=3; v.pp++; }
+                else if(m.gV > m.gL){ v.pg++; v.pts+=3; l.pp++; }
+                else { l.pe++; v.pe++; l.pts+=1; v.pts+=1; }
+            });
+            return Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc) || b.gf - a.gf);
+        };
+
+        window.updateStandingsUI = () => {
+            const cat = document.getElementById('filter-category-table').value;
+            const sorted = getTableData(cat);
+            document.getElementById('standings-body').innerHTML = sorted.map((s, i) => `
+                <tr class="bg-white">
+                    <td class="p-4 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-4 flex items-center gap-3 font-black uppercase italic">
+                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <span>${s.name}</span>
+                    </td>
+                    <td class="p-2 text-center">${s.pj}</td>
+                    <td class="p-2 text-center text-blue-700">${s.pg}</td>
+                    <td class="p-2 text-center text-slate-500">${s.pe}</td>
+                    <td class="p-2 text-center text-red-700">${s.pp}</td>
+                    <td class="p-2 text-center">${s.gf - s.gc}</td>
+                    <td class="p-2 text-center bg-yellow-50 text-yellow-700 font-bold">${s.ta}</td>
+                    <td class="p-2 text-center bg-red-50 text-red-700 font-bold">${s.tr}</td>
+                    <td class="p-4 text-center bg-blue-900 text-white font-black text-lg">${s.pts}</td>
+                </tr>
+            `).join('');
+        };
+
+        window.updateGeneralUI = () => {
+            const table = {};
+            teams.forEach(t => table[t] = { name:t, pts:0 });
+            matches.filter(m => m.gL !== null).forEach(m => {
+                const l = table[m.local], v = table[m.visitor];
+                if(l && v) {
+                    if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
+                }
+            });
+            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts);
+            document.getElementById('general-standings-body').innerHTML = sorted.map((s, i) => `
+                <tr class="bg-white">
+                    <td class="p-5 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-5 flex items-center gap-4 font-black uppercase italic">
+                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
+                        <span>${s.name}</span>
+                    </td>
+                    <td class="p-5 text-center bg-blue-900 text-white font-black text-2xl italic">${s.pts}</td>
+                </tr>
+            `).join('');
+        };
+
+        window.exportarPDF = () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
             
-            doc.setFillColor(15, 23, 42); // slate-900
+            doc.setFillColor(15, 23, 42);
             doc.rect(0, 0, 210, 45, 'F');
-            
             doc.setTextColor(255, 255, 255);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
+            doc.setFontSize(16);
             doc.text("ASOCIACIÓN METROPOLITANA DE FÚTBOL", 10, 15);
-            doc.setFontSize(14);
-            doc.setTextColor(96, 165, 250); // blue-400
-            doc.text("Dto. de FUTSAL MAYOR", 10, 23);
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(10);
-            doc.text("SISTEMA OFICIAL DE COMPETENCIA - REPORTE DE " + currentTabId.toUpperCase(), 10, 32);
-            doc.text("Fecha: " + new Date().toLocaleDateString(), 10, 38);
+            doc.setFontSize(12);
+            doc.setTextColor(96, 165, 250);
+            doc.text("Dto. de FUTSAL MAYOR - REPORTE DE " + currentTabId.toUpperCase(), 10, 23);
+            doc.setTextColor(200, 200, 200);
+            doc.text("Fecha: " + new Date().toLocaleString(), 10, 30);
 
             if (currentTabId === 'partidos') {
                 const cat = document.getElementById('filter-category-matches').value;
                 const round = document.getElementById('filter-round-matches').value;
                 const filtered = matches.filter(m => (cat === "TODAS" || m.category === cat) && (round === "TODAS" || m.round === round));
-
                 doc.autoTable({
                     startY: 55,
-                    head: [['Fecha', 'Categoría', 'Local', 'G-L', 'G-V', 'Visitante', 'TA-L', 'TR-L', 'TA-V', 'TR-V']],
-                    body: filtered.map(m => [m.round, m.category, m.local, m.gL??'-', m.gV??'-', m.visitor, m.yL, m.rL, m.yV, m.rV]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [30, 58, 138] },
-                    styles: { fontSize: 8, fontStyle: 'bold' }
+                    head: [['Fecha', 'Cat', 'Local', 'Res', 'Visitante', 'TA/TR']],
+                    body: filtered.map(m => [m.round, m.category, m.local, `${m.gL??'-'} - ${m.gV??'-'}`, m.visitor, `${m.yL}/${m.rL} | ${m.yV}/${m.rV}`]),
                 });
             } else if (currentTabId === 'tabla') {
                 const cat = document.getElementById('filter-category-table').value;
                 const data = getTableData(cat);
                 doc.autoTable({
                     startY: 55,
-                    head: [['Pos', 'Club', 'PJ', 'PG', 'PE', 'PP', 'DG', 'TA', 'TR', 'PTS']],
-                    body: data.map((s, i) => [i+1, s.name, s.pj, s.pg, s.pe, s.pp, s.gf-s.gc, s.ta, s.tr, s.pts]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [30, 58, 138] },
-                    columnStyles: { 9: { fillColor: [30, 58, 138], textColor: 255 } }
+                    head: [['Pos', 'Club', 'PJ', 'PG', 'PE', 'PP', 'DG', 'PTS']],
+                    body: data.map((s, i) => [i+1, s.name, s.pj, s.pg, s.pe, s.pp, s.gf-s.gc, s.pts]),
                 });
             } else if (currentTabId === 'general') {
                 const genTable = {};
                 teams.forEach(t => genTable[t] = { name:t, pts:0 });
                 matches.filter(m => m.gL !== null).forEach(m => {
                     const l = genTable[m.local], v = genTable[m.visitor];
-                    if(l && v) {
-                        if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
-                    }
+                    if(l && v) { if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; } }
                 });
                 const sorted = Object.values(genTable).sort((a,b) => b.pts - a.pts);
                 doc.autoTable({
                     startY: 55,
-                    head: [['Posición', 'Club', 'Puntos Acumulados']],
+                    head: [['Pos', 'Club', 'Pts']],
                     body: sorted.map((s, i) => [i+1, s.name, s.pts]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [30, 58, 138] },
-                    columnStyles: { 2: { fontSize: 14, fontStyle: 'bold' } }
                 });
             }
 
-            doc.save(`AMF_${currentTabId.toUpperCase()}_REPORTE.pdf`);
-        }
+            doc.save(`AMF_${currentTabId}.pdf`);
+        };
 
-        function deleteTeam(n) { if(confirm("¿Eliminar club?")) { teams = teams.filter(t => t !== n); save(); } }
-        function deleteMatch(id) { matches = matches.filter(m => m.id !== id); save(); }
-        function save() {
-            localStorage.setItem('amf_db_teams', JSON.stringify(teams));
-            localStorage.setItem('amf_db_matches', JSON.stringify(matches));
-            render();
-        }
-        function resetGeneralData() { 
-            if(confirm("¿Estás seguro? Se borrarán todos los RESULTADOS y TABLAS, pero se mantendrán los CLUBES.")) { 
-                matches = []; 
-                localStorage.setItem('amf_db_matches', JSON.stringify(matches));
-                location.reload(); 
-            } 
-        }
+        // Start Auth process on load
+        initAuth();
 
-        window.onload = () => { render(); showTab('equipos'); };
     </script>
 </body>
 </html>
-
