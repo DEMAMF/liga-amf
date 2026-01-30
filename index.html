@@ -328,8 +328,13 @@
                 tour: document.getElementById('m-tournament').value.toUpperCase(),
                 local: document.getElementById('m-local').value,
                 visitor: document.getElementById('m-visitor').value,
-                gL: document.getElementById('g-local').value === "" ? null : parseInt(document.getElementById('g-local').value),
-                gV: document.getElementById('g-visitor').value === "" ? null : parseInt(document.getElementById('g-visitor').value),
+                gL: document.getElementById('g-local').value === "" 
+                      ? null 
+                      : parseInt(document.getElementById('g-local').value),
+                
+                gV: document.getElementById('g-visitor').value === "" 
+      ? null 
+      : parseInt(document.getElementById('g-visitor').value),
                 yL: parseInt(document.getElementById('y-local').value) || 0,
                 rL: parseInt(document.getElementById('r-local').value) || 0,
                 yV: parseInt(document.getElementById('y-visitor').value) || 0,
