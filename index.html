@@ -84,26 +84,15 @@
             
             <!-- SECCIÓN CLUBES -->
             <div id="equipos" class="tab-content active">
-<div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
-    <div class="flex gap-2">
-        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase shadow-sm border-none outline-blue-500">
-        <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
-        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">
-            Reset Torneo (Mantener Clubes)
-        </button>
-    </div>
-
-    <!-- BOTÓN SOLO ADMIN -->
-    <div class="mt-4">
-        <button onclick="exportarJSON()"
-         class="bg-green-700 text-white px-4 py-2 rounded-xl font-black text-xs">
-         DESCARGAR DATOS
-        </button>
-    </div>
-</div>
-
-<div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-
+                <div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
+                    <div class="flex gap-2">
+                        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase shadow-sm border-none outline-blue-500">
+                        <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
+                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs italic">Reset Torneo (Mantener Clubes)</button>
+                    </div>
+                </div>
+                <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
 
             <!-- SECCIÓN RESULTADOS -->
             <div id="partidos" class="tab-content">
@@ -328,13 +317,8 @@
                 tour: document.getElementById('m-tournament').value.toUpperCase(),
                 local: document.getElementById('m-local').value,
                 visitor: document.getElementById('m-visitor').value,
-                gL: document.getElementById('g-local').value === "" 
-                      ? null 
-                      : parseInt(document.getElementById('g-local').value),
-                
-                gV: document.getElementById('g-visitor').value === "" 
-      ? null 
-      : parseInt(document.getElementById('g-visitor').value),
+                gL: document.getElementById('g-local').value === "" ? null : parseInt(document.getElementById('g-local').value),
+                gV: document.getElementById('g-visitor').value === "" ? null : parseInt(document.getElementById('g-visitor').value),
                 yL: parseInt(document.getElementById('y-local').value) || 0,
                 rL: parseInt(document.getElementById('r-local').value) || 0,
                 yV: parseInt(document.getElementById('y-visitor').value) || 0,
@@ -558,23 +542,7 @@
         }
 
         window.onload = () => { render(); showTab('equipos'); };
-		function exportarJSON() {
-  const data = {
-    teams: teams,
-    matches: matches
-  };
-
-  const blob = new Blob(
-    [JSON.stringify(data, null, 2)],
-    { type: "application/json" }
-  );
-
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "datos.json";
-  a.click();
-}
-
     </script>
 </body>
 </html>
+
