@@ -3,273 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asociación Metropolitana de Fútbol - Sistema Oficial</title>
+    <title>AMF - Sistema Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .tab-button.active { border-bottom: 4px solid #1e3a8a; color: #1e3a8a; background-color: rgba(30, 58, 138, 0.05); }
+        .tab-button.active { border-bottom: 4px solid #1e3a8a; color: #1e3a8a; background-color: #eff6ff; }
         .admin-only { display: none !important; }
         body.is-admin .admin-only { display: block !important; }
-        .team-logo { width: 28px; height: 28px; object-fit: contain; }
-        table td, table th { border: 1px solid #e2e8f0; }
-        .res-winner { background-color: #1e3a8a !important; color: white !important; }
-        .res-loser { background-color: #dc2626 !important; color: white !important; }
-        .res-draw { background-color: #334155 !important; color: white !important; }
-        .logo-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-        .logo-stack img { height: 60px; width: auto; object-fit: contain; }
+        .team-logo { width: 30px; height: 30px; object-fit: contain; }
+        .loading-overlay { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="min-h-screen text-slate-900">
 
-    <div id="main-container" class="max-w-5xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200">
+    <!-- Pantalla de Carga -->
+    <div id="loader" class="loading-overlay">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-900 border-solid mx-auto mb-4"></div>
+            <p class="font-black uppercase italic text-slate-400 animate-pulse">Conectando con la Nube...</p>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto md:my-10 bg-white md:rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200 min-h-[80vh]">
         
         <!-- HEADER -->
-        <div id="pdf-header" class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
-            <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-white/20 hover:text-blue-400 p-2 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+        <header class="bg-slate-900 p-8 text-white flex flex-col md:flex-row justify-between items-center gap-6 relative">
+            <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-white/10 hover:text-blue-400 p-2 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
             </button>
 
             <div class="flex items-center gap-5">
-                <img id="logo-liga" src="logo_liga.png" alt="Logo AMF" class="h-24 w-auto" onerror="this.src='https://via.placeholder.com/100?text=AMF'">
                 <div class="text-left uppercase">
-                    <h1 class="text-2xl font-black italic leading-tight">Asociación<br>Metropolitana<br>de Fútbol</h1>
-                    <h2 class="text-blue-400 font-bold text-lg mt-1 italic">Dto. de FUTSAL MAYOR</h2>
+                    <h1 class="text-2xl font-black italic leading-tight">AMF - OFICIAL</h1>
+                    <h2 class="text-blue-400 font-bold text-sm italic">Dto. de FUTSAL MAYOR</h2>
                 </div>
             </div>
 
-            <button id="btn-export-global" onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-black text-xs uppercase transition-all shadow-lg flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                PDF Reporte
-            </button>
-
-            <div class="logo-stack">
-                <img id="logo-afa" src="logo_afa.png" alt="Logo AFA" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_logo.svg/1200px-Asociaci%C3%B3n_del_F%C3%BAtbol_Argentino_logo.svg.png'">
-                <img id="logo-consejo" src="Consejo Federal.png" alt="Logo Consejo Federal" onerror="this.src='https://via.placeholder.com/80?text=C.F.'">
+            <div class="flex gap-2">
+                <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-black text-[10px] uppercase transition-all shadow-lg flex items-center gap-2">
+                    Exportar PDF
+                </button>
             </div>
-        </div>
+        </header>
 
         <!-- MENU -->
-        <nav class="flex border-b border-slate-100 bg-white overflow-x-auto">
-            <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Clubes</button>
-            <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Resultados</button>
-            <button onclick="showTab('tabla')" id="btn-tabla" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Posiciones</button>
-            <button onclick="showTab('general')" id="btn-general" class="tab-button px-6 py-5 font-black text-[11px] uppercase tracking-widest text-slate-400">Tabla General</button>
+        <nav class="flex border-b border-slate-100 bg-white sticky top-0 z-10">
+            <button onclick="showTab('equipos')" id="btn-equipos" class="tab-button active flex-1 px-4 py-4 font-black text-[10px] uppercase tracking-tighter">Clubes</button>
+            <button onclick="showTab('partidos')" id="btn-partidos" class="tab-button flex-1 px-4 py-4 font-black text-[10px] uppercase tracking-tighter">Resultados</button>
+            <button onclick="showTab('tabla')" id="btn-tabla" class="tab-button flex-1 px-4 py-4 font-black text-[10px] uppercase tracking-tighter">Posiciones</button>
+            <button onclick="showTab('general')" id="btn-general" class="tab-button flex-1 px-4 py-4 font-black text-[10px] uppercase tracking-tighter">General</button>
         </nav>
 
-        <main class="p-6 md:p-10">
+        <main class="p-6">
+            <!-- PANEL CLUBES -->
             <div id="equipos" class="tab-content active">
-                <div class="admin-only mb-10 bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
+                <div class="admin-only mb-6 bg-slate-50 p-4 rounded-xl border-2 border-dashed border-slate-200">
                     <div class="flex gap-2">
-                        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-4 rounded-xl font-bold uppercase border border-slate-200">
-                        <button onclick="addTeam()" class="bg-blue-600 text-white px-8 rounded-xl font-black uppercase text-xs">Añadir</button>
-                        <button onclick="resetGeneralData()" class="bg-red-800 text-white px-4 rounded-xl font-black uppercase text-xs">Reset Torneo</button>
+                        <input type="text" id="new-team-name" placeholder="NOMBRE DEL CLUB..." class="flex-1 p-3 rounded-lg font-bold uppercase border border-slate-300">
+                        <button onclick="addTeam()" class="bg-blue-600 text-white px-6 rounded-lg font-black uppercase text-xs">Añadir</button>
                     </div>
                 </div>
-                <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="team-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
             </div>
 
+            <!-- PANEL RESULTADOS -->
             <div id="partidos" class="tab-content">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                    <h2 class="text-2xl font-black text-slate-800 uppercase italic">Resultados</h2>
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <div class="admin-only">
-                            <input type="file" id="excel-import" accept=".xlsx, .xls" class="hidden" onchange="importFixture(event)">
-                            <button onclick="document.getElementById('excel-import').click()" class="bg-green-600 text-white p-3 rounded-xl font-bold text-[10px] uppercase">Importar</button>
-                        </div>
-                        <select id="filter-category-matches" onchange="renderMatches()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
-                            <option value="TODAS">Categorías: Todas</option>
-                            <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
-                            <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
-                            <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
-                            <option value="6º DIVISION">6º DIVISION</option>
-                            <option value="5º DIVISION">5º DIVISION</option>
-                            <option value="4º DIVISION">4º DIVISION</option>
-                            <option value="3º DIVISION">3º DIVISION</option>
-                            <option value="1º DIVISION">1º DIVISION</option>
-                            <option value="SENIOR">SENIOR</option>
-                        </select>
-                        <select id="filter-round-matches" onchange="renderMatches()" class="flex-1 bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
-                            <option value="TODAS">Fechas: Todas</option>
-                            <option value="FECHA 1">FECHA 1</option><option value="FECHA 2">FECHA 2</option>
-                            <option value="FECHA 3">FECHA 3</option><option value="FECHA 4">FECHA 4</option>
-                        </select>
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-xl font-black text-slate-800 uppercase italic">Partidos Cargados</h2>
+                    <div class="flex gap-2 admin-only">
+                        <input type="file" id="excel-import" class="hidden" onchange="importFixture(event)">
+                        <button onclick="document.getElementById('excel-import').click()" class="bg-green-600 text-white px-3 py-2 rounded font-bold text-[10px] uppercase">Excel</button>
+                        <button onclick="resetGeneralData()" class="bg-red-600 text-white px-3 py-2 rounded font-bold text-[10px] uppercase">Borrar Todo</button>
                     </div>
                 </div>
 
-                <div class="admin-only bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 mb-8">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                        <select id="m-category" class="p-3 rounded-xl font-bold text-xs uppercase border border-blue-200">
-                            <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
-                            <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
-                            <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
-                            <option value="6º DIVISION">6º DIVISION</option>
-                            <option value="5º DIVISION">5º DIVISION</option>
-                            <option value="4º DIVISION">4º DIVISION</option>
-                            <option value="3º DIVISION">3º DIVISION</option>
+                <div class="admin-only bg-blue-50 p-4 rounded-xl border border-blue-200 mb-6">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                        <select id="m-category" class="p-2 rounded font-bold text-[10px] uppercase border">
                             <option value="1º DIVISION">1º DIVISION</option>
+                            <option value="3º DIVISION">3º DIVISION</option>
+                            <option value="4º DIVISION">4º DIVISION</option>
+                            <option value="5º DIVISION">5º DIVISION</option>
+                            <option value="6º DIVISION">6º DIVISION</option>
+                            <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
                             <option value="SENIOR">SENIOR</option>
                         </select>
-                        <input type="text" id="m-round" placeholder="Ej: FECHA 1" class="p-3 rounded-xl font-bold text-xs uppercase border border-blue-200">
-                        <input type="text" id="m-tournament" value="TORNEO OFICIAL" class="p-3 rounded-xl font-bold text-xs uppercase border border-blue-200">
+                        <input type="text" id="m-round" placeholder="FECHA 1" class="p-2 rounded font-bold text-[10px] uppercase border">
+                        <input type="text" id="m-tour" value="TORNEO OFICIAL" class="p-2 rounded font-bold text-[10px] uppercase border">
                     </div>
-                    <div class="flex flex-col gap-4 bg-white p-6 rounded-xl border border-blue-100">
-                        <div class="flex items-center gap-4">
-                            <select id="m-local" class="flex-1 p-2 font-bold uppercase border rounded"></select>
-                            <input type="number" id="g-local" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-50 border rounded p-2">
-                            <span class="font-black text-slate-300 italic">VS</span>
-                            <input type="number" id="g-visitor" placeholder="0" class="w-16 text-center font-black text-xl bg-slate-50 border rounded p-2">
-                            <select id="m-visitor" class="flex-1 p-2 font-bold uppercase border rounded"></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 border-t pt-4">
-                            <div class="flex gap-2">
-                                <input type="number" id="y-local" value="0" class="w-full p-2 bg-yellow-50 rounded text-center font-bold">
-                                <input type="number" id="r-local" value="0" class="w-full p-2 bg-red-50 rounded text-center font-bold">
-                            </div>
-                            <div class="flex gap-2">
-                                <input type="number" id="y-visitor" value="0" class="w-full p-2 bg-yellow-50 rounded text-center font-bold">
-                                <input type="number" id="r-visitor" value="0" class="w-full p-2 bg-red-50 rounded text-center font-bold">
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-2 bg-white p-4 rounded border">
+                        <select id="m-local" class="flex-1 p-2 font-bold uppercase border text-[10px]"></select>
+                        <input type="number" id="g-local" placeholder="0" class="w-12 text-center font-black bg-slate-100 border p-2">
+                        <span class="font-black italic text-slate-400">VS</span>
+                        <input type="number" id="g-visitor" placeholder="0" class="w-12 text-center font-black bg-slate-100 border p-2">
+                        <select id="m-visitor" class="flex-1 p-2 font-bold uppercase border text-[10px]"></select>
                     </div>
-                    <button onclick="addMatch()" class="w-full mt-4 bg-blue-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg">Guardar Resultado</button>
+                    <button onclick="addMatch()" class="w-full mt-3 bg-blue-600 text-white py-3 rounded-lg font-black uppercase text-[10px]">Guardar</button>
                 </div>
 
                 <div id="match-list" class="space-y-3"></div>
             </div>
 
+            <!-- PANEL POSICIONES -->
             <div id="tabla" class="tab-content">
-                <div class="mb-8 flex justify-between items-center">
-                    <h2 class="text-2xl font-black text-slate-800 uppercase italic">Posiciones</h2>
-                    <select id="filter-category-table" onchange="updateStandingsUI()" class="bg-slate-100 p-3 rounded-xl font-bold text-xs uppercase outline-none">
-                        <option value="SUB15 FEMENINO">SUB15 FEMENINO</option>
-                        <option value="SUB17 FEMENINO">SUB17 FEMENINO</option>
-                        <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
-                        <option value="6º DIVISION">6º DIVISION</option>
-                        <option value="5º DIVISION">5º DIVISION</option>
-                        <option value="4º DIVISION">4º DIVISION</option>
-                        <option value="3º DIVISION">3º DIVISION</option>
-                        <option value="1º DIVISION">1º DIVISION</option>
-                        <option value="SENIOR">SENIOR</option>
-                    </select>
-                </div>
-                <div class="overflow-x-auto rounded-3xl border border-slate-200 shadow-xl bg-white">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-900 text-white uppercase font-black text-[10px]">
+                <select id="filter-category-table" onchange="updateStandingsUI()" class="w-full mb-4 bg-slate-900 text-white p-3 rounded-lg font-bold text-xs uppercase">
+                    <option value="1º DIVISION">1º DIVISION</option>
+                    <option value="3º DIVISION">3º DIVISION</option>
+                    <option value="4º DIVISION">4º DIVISION</option>
+                    <option value="5º DIVISION">5º DIVISION</option>
+                    <option value="6º DIVISION">6º DIVISION</option>
+                    <option value="1º DIVISION FEMENINIO">1º DIVISION FEMENINIO</option>
+                    <option value="SENIOR">SENIOR</option>
+                </select>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-900 text-white uppercase text-[9px]">
                             <tr>
-                                <th class="p-4 text-center">Pos</th>
-                                <th class="p-4">Club</th>
+                                <th class="p-3 text-center">Pos</th>
+                                <th class="p-3">Club</th>
                                 <th class="p-2 text-center">PJ</th>
-                                <th class="p-2 text-center">PG</th>
-                                <th class="p-2 text-center">PE</th>
-                                <th class="p-2 text-center">PP</th>
                                 <th class="p-2 text-center">DG</th>
-                                <th class="p-2 text-center bg-yellow-500 text-black">TA</th>
-                                <th class="p-2 text-center bg-red-600">TR</th>
-                                <th class="p-4 text-center bg-blue-900">PTS</th>
+                                <th class="p-3 text-center bg-blue-800">PTS</th>
                             </tr>
                         </thead>
-                        <tbody id="standings-body" class="font-bold divide-y divide-slate-100 italic"></tbody>
+                        <tbody id="standings-body" class="divide-y font-bold"></tbody>
                     </table>
                 </div>
             </div>
 
+            <!-- PANEL GENERAL -->
             <div id="general" class="tab-content">
-                <h2 class="text-2xl font-black text-slate-800 uppercase italic mb-8">Tabla General de Clubes</h2>
-                <div class="overflow-hidden rounded-3xl border border-slate-200 shadow-xl bg-white">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-900 text-white uppercase font-black text-[10px]">
+                <div class="overflow-hidden rounded-xl border border-slate-200">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-900 text-white uppercase text-[9px]">
                             <tr>
-                                <th class="p-5 text-center w-20">Pos</th>
-                                <th class="p-5">Club</th>
-                                <th class="p-5 text-center bg-blue-900">Puntos Acumulados</th>
+                                <th class="p-4 text-center w-16">Pos</th>
+                                <th class="p-4">Club</th>
+                                <th class="p-4 text-center bg-blue-800">Total Puntos</th>
                             </tr>
                         </thead>
-                        <tbody id="general-standings-body" class="font-bold divide-y divide-slate-100"></tbody>
+                        <tbody id="general-standings-body" class="divide-y font-bold italic"></tbody>
                     </table>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Script de Depuración -->
+    <div id="debug-log" class="max-w-5xl mx-auto mt-4 p-4 bg-black text-green-500 font-mono text-[10px] rounded h-32 overflow-y-auto hidden">
+        > Iniciando sistema...
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // CONFIGURACIÓN (REGLA 1 y 2)
+        const log = (msg) => {
+            const d = document.getElementById('debug-log');
+            d.innerHTML += `<br>> ${msg}`;
+            console.log(msg);
+        };
+
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'amf-oficial-cloud';
+        
+        // REGLA DE ORO: Ruta absoluta controlada
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'amf-prod-v1';
+        const PUBLIC_PATH = ['artifacts', APP_ID, 'public', 'data'];
 
         let teams = [];
         let matches = [];
         let user = null;
-        let isAdminActive = false;
+        let isAdmin = false;
 
-        // AUTH (REGLA 3: IMPRESCINDIBLE PARA EVITAR ERROR DE PERMISOS)
-        const startApp = async () => {
+        // AUTH
+        const init = async () => {
             try {
+                log("Autenticando...");
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.error("Auth Error", e);
+                log("ERROR AUTH: " + e.message);
             }
         };
 
         onAuthStateChanged(auth, (u) => {
-            user = u;
             if (u) {
-                // SOLO CARGAMOS DATOS SI HAY SESIÓN ACTIVA
-                initRealtime();
+                user = u;
+                log("Sesión activa: " + u.uid);
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+                startListeners();
             }
         });
 
-        const initRealtime = () => {
+        const startListeners = () => {
             if (!user) return;
+            log("Iniciando escucha de datos...");
 
-            // Escuchar Equipos
-            const teamsRef = collection(db, 'artifacts', appId, 'public', 'data', 'teams');
+            // Colecciones
+            const teamsRef = collection(db, ...PUBLIC_PATH, 'teams');
+            const matchesRef = collection(db, ...PUBLIC_PATH, 'matches');
+
             onSnapshot(teamsRef, (snap) => {
                 teams = snap.docs.map(d => d.data().name);
+                log(`Equipos recibidos: ${teams.length}`);
                 renderTeams();
                 updateSelects();
                 updateStandingsUI();
                 updateGeneralUI();
-            }, (err) => console.log("Teams error:", err));
+            }, (err) => log("Error Equipos: " + err.message));
 
-            // Escuchar Partidos
-            const matchesRef = collection(db, 'artifacts', appId, 'public', 'data', 'matches');
             onSnapshot(matchesRef, (snap) => {
                 matches = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+                log(`Resultados recibidos: ${matches.length}`);
                 renderMatches();
                 updateStandingsUI();
                 updateGeneralUI();
-            }, (err) => console.log("Matches error:", err));
+            }, (err) => log("Error Resultados: " + err.message));
         };
 
-        // UI ACTIONS
+        // ACCIONES GLOBALES
         window.toggleAdmin = () => {
-            const pass = prompt("Acceso Administrador:");
-            if(pass === "admin123") {
-                isAdminActive = true;
-                document.body.classList.add('is-admin');
-            } else {
-                isAdminActive = false;
-                document.body.classList.remove('is-admin');
+            const p = prompt("Password:");
+            if(p === "1234") {
+                isAdmin = !isAdmin;
+                document.body.classList.toggle('is-admin', isAdmin);
+                document.getElementById('debug-log').classList.toggle('hidden', !isAdmin);
+                log("Modo Admin: " + isAdmin);
             }
-            renderTeams();
-            renderMatches();
         };
 
         window.showTab = (id) => {
@@ -277,220 +251,113 @@
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             document.getElementById('btn-'+id).classList.add('active');
-            if(id === 'tabla') updateStandingsUI();
-            if(id === 'general') updateGeneralUI();
         };
 
-        const getShield = (name) => `escudos/${name.toUpperCase().trim()}.png`;
-
         window.addTeam = async () => {
-            if(!user) return;
-            const name = document.getElementById('new-team-name').value.trim().toUpperCase();
-            if(name && !teams.includes(name)) {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', name), { name });
+            const n = document.getElementById('new-team-name').value.trim().toUpperCase();
+            if(n && !teams.includes(n)) {
+                await setDoc(doc(db, ...PUBLIC_PATH, 'teams', n), { name: n });
                 document.getElementById('new-team-name').value = '';
             }
         };
 
-        window.deleteTeam = async (name) => {
-            if(!user || !confirm("¿Eliminar club?")) return;
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'teams', name));
-        };
-
         window.addMatch = async () => {
-            if(!user) return;
             const m = {
                 category: document.getElementById('m-category').value,
                 round: document.getElementById('m-round').value.toUpperCase() || 'FECHA',
-                tour: document.getElementById('m-tournament').value.toUpperCase(),
+                tour: document.getElementById('m-tour').value.toUpperCase(),
                 local: document.getElementById('m-local').value,
                 visitor: document.getElementById('m-visitor').value,
                 gL: document.getElementById('g-local').value === "" ? null : parseInt(document.getElementById('g-local').value),
                 gV: document.getElementById('g-visitor').value === "" ? null : parseInt(document.getElementById('g-visitor').value),
-                yL: parseInt(document.getElementById('y-local').value) || 0,
-                rL: parseInt(document.getElementById('r-local').value) || 0,
-                yV: parseInt(document.getElementById('y-visitor').value) || 0,
-                rV: parseInt(document.getElementById('r-visitor').value) || 0,
-                timestamp: Date.now()
+                ts: Date.now()
             };
             if(m.local === m.visitor) return;
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'matches'), m);
+            await addDoc(collection(db, ...PUBLIC_PATH, 'matches'), m);
             document.getElementById('g-local').value = '';
             document.getElementById('g-visitor').value = '';
         };
 
         window.deleteMatch = async (id) => {
-            if(!user || !confirm("¿Eliminar resultado?")) return;
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', id));
+            if(confirm("¿Borrar?")) await deleteDoc(doc(db, ...PUBLIC_PATH, 'matches', id));
         };
 
-        // RENDERING
+        // RENDERERS
         const renderTeams = () => {
             const grid = document.getElementById('team-grid');
-            if(!grid) return;
             grid.innerHTML = teams.sort().map(t => `
-                <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <img src="${getShield(t)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                        <span class="font-black uppercase text-[10px] italic">${t}</span>
-                    </div>
-                    ${isAdminActive ? `<button onclick="deleteTeam('${t}')" class="text-red-400 font-bold px-2">X</button>` : ''}
+                <div class="bg-white p-3 rounded-lg border flex justify-between items-center">
+                    <span class="font-black text-[10px] uppercase italic">${t}</span>
+                    ${isAdmin ? `<button onclick="deleteDoc(doc(db, ...PUBLIC_PATH, 'teams', '${t}'))" class="text-red-500">x</button>` : ''}
                 </div>
             `).join('');
         };
 
         window.renderMatches = () => {
-            const catF = document.getElementById('filter-category-matches').value;
-            const roundF = document.getElementById('filter-round-matches').value;
-            const filtered = matches.filter(m => (catF === "TODAS" || m.category === catF) && (roundF === "TODAS" || m.round === roundF));
-
-            document.getElementById('match-list').innerHTML = filtered.sort((a,b) => b.timestamp - a.timestamp).map(m => {
-                const isPlayed = m.gL !== null;
-                let cL = "bg-slate-900", cV = "bg-slate-900";
-                if(isPlayed) {
-                    if(m.gL > m.gV) { cL = "res-winner"; cV = "res-loser"; }
-                    else if(m.gV > m.gL) { cV = "res-winner"; cL = "res-loser"; }
-                    else { cL = "res-draw"; cV = "res-draw"; }
-                }
-
-                return `
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm border-l-4 border-l-blue-900">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-24 text-[9px] font-black uppercase text-slate-400">
-                            ${m.round}<br><span class="text-blue-900">${m.category}</span>
-                        </div>
-                        <div class="flex-1 text-right font-black uppercase text-[11px] flex items-center justify-end gap-2 italic">
-                            <span>${m.local}</span>
-                            <img src="${getShield(m.local)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                        </div>
-                        <div class="flex items-center gap-1 mx-4">
-                            <div class="${cL} text-white w-10 h-12 flex items-center justify-center rounded-lg font-black text-2xl">${m.gL ?? '-'}</div>
-                            <div class="${cV} text-white w-10 h-12 flex items-center justify-center rounded-lg font-black text-2xl">${m.gV ?? '-'}</div>
-                        </div>
-                        <div class="flex-1 text-left font-black uppercase text-[11px] flex items-center gap-2 italic">
-                            <img src="${getShield(m.visitor)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                            <span>${m.visitor}</span>
-                        </div>
-                        ${isAdminActive ? `<button onclick="deleteMatch('${m.id}')" class="text-red-500 font-bold ml-2">X</button>` : ''}
+            document.getElementById('match-list').innerHTML = matches.sort((a,b) => b.ts - a.ts).map(m => `
+                <div class="bg-white p-3 rounded-lg border border-l-4 border-l-slate-900 flex items-center justify-between text-[10px] font-bold">
+                    <div class="w-20 text-slate-400 uppercase">${m.category}</div>
+                    <div class="flex-1 text-right italic uppercase">${m.local}</div>
+                    <div class="flex gap-1 mx-3">
+                        <div class="bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded">${m.gL ?? '-'}</div>
+                        <div class="bg-slate-900 text-white w-8 h-8 flex items-center justify-center rounded">${m.gV ?? '-'}</div>
                     </div>
-                    <div class="flex justify-center gap-12 border-t pt-3 text-[10px] font-bold">
-                        <div class="flex gap-4"><span class="text-yellow-600">TA: ${m.yL}</span><span class="text-red-600">TR: ${m.rL}</span></div>
-                        <div class="flex gap-4"><span class="text-yellow-600">TA: ${m.yV}</span><span class="text-red-600">TR: ${m.rV}</span></div>
-                    </div>
-                </div>`;
-            }).join('');
+                    <div class="flex-1 text-left italic uppercase">${m.visitor}</div>
+                    ${isAdmin ? `<button onclick="deleteMatch('${m.id}')" class="ml-2 text-red-500">×</button>` : ''}
+                </div>
+            `).join('');
         };
 
         const updateSelects = () => {
-            const opts = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
-            document.getElementById('m-local').innerHTML = opts;
-            document.getElementById('m-visitor').innerHTML = opts;
-        };
-
-        const getTableData = (cat) => {
-            const table = {};
-            teams.forEach(t => table[t] = { name:t, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0, ta:0, tr:0 });
-            matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
-                const l = table[m.local], v = table[m.visitor];
-                if(!l || !v) return;
-                l.pj++; v.pj++; l.gf += m.gL; l.gc += m.gV; v.gf += m.gV; v.gc += m.gL;
-                l.ta += m.yL; l.tr += m.rL; v.ta += m.yV; v.tr += m.rV;
-                if(m.gL > m.gV){ l.pg++; l.pts+=3; v.pp++; }
-                else if(m.gV > m.gL){ v.pg++; v.pts+=3; l.pp++; }
-                else { l.pe++; v.pe++; l.pts+=1; v.pts+=1; }
-            });
-            return Object.values(table).sort((a,b) => b.pts - a.pts || (b.gf-b.gc)-(a.gf-a.gc));
+            const h = teams.sort().map(t => `<option value="${t}">${t}</option>`).join('');
+            document.getElementById('m-local').innerHTML = h;
+            document.getElementById('m-visitor').innerHTML = h;
         };
 
         window.updateStandingsUI = () => {
             const cat = document.getElementById('filter-category-table').value;
-            const data = getTableData(cat);
-            document.getElementById('standings-body').innerHTML = data.map((s, i) => `
-                <tr class="bg-white">
-                    <td class="p-4 text-center font-black">${i+1}</td>
-                    <td class="p-4 flex items-center gap-3 font-black uppercase italic">
-                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                        <span>${s.name}</span>
-                    </td>
-                    <td class="p-2 text-center">${s.pj}</td>
-                    <td class="p-2 text-center text-blue-700">${s.pg}</td>
-                    <td class="p-2 text-center">${s.pe}</td>
-                    <td class="p-2 text-center text-red-700">${s.pp}</td>
-                    <td class="p-2 text-center">${s.gf - s.gc}</td>
-                    <td class="p-2 text-center bg-yellow-50">${s.ta}</td>
-                    <td class="p-2 text-center bg-red-50">${s.tr}</td>
-                    <td class="p-4 text-center bg-blue-900 text-white font-black">${s.pts}</td>
-                </tr>`).join('');
+            const stats = {};
+            teams.forEach(t => stats[t] = { pts:0, pj:0, dg:0 });
+            matches.filter(m => m.category === cat && m.gL !== null).forEach(m => {
+                if(!stats[m.local] || !stats[m.visitor]) return;
+                stats[m.local].pj++; stats[m.visitor].pj++;
+                stats[m.local].dg += (m.gL - m.gV); stats[m.visitor].dg += (m.gV - m.gL);
+                if(m.gL > m.gV) stats[m.local].pts += 3;
+                else if(m.gV > m.gL) stats[m.visitor].pts += 3;
+                else { stats[m.local].pts++; stats[m.visitor].pts++; }
+            });
+            const sorted = Object.entries(stats).sort((a,b) => b[1].pts - a[1].pts || b[1].dg - a[1].dg);
+            document.getElementById('standings-body').innerHTML = sorted.map(([name, s], i) => `
+                <tr>
+                    <td class="p-3 text-center">${i+1}</td>
+                    <td class="p-3 uppercase italic">${name}</td>
+                    <td class="p-2 text-center text-slate-400">${s.pj}</td>
+                    <td class="p-2 text-center">${s.dg}</td>
+                    <td class="p-3 text-center bg-blue-50 text-blue-900 font-black">${s.pts}</td>
+                </tr>
+            `).join('');
         };
 
         window.updateGeneralUI = () => {
-            const table = {};
-            teams.forEach(t => table[t] = { name:t, pts:0 });
+            const gen = {};
+            teams.forEach(t => gen[t] = 0);
             matches.filter(m => m.gL !== null).forEach(m => {
-                const l = table[m.local], v = table[m.visitor];
-                if(l && v) {
-                    if(m.gL > m.gV) l.pts += 3; else if(m.gV > m.gL) v.pts += 3; else { l.pts += 1; v.pts += 1; }
-                }
+                if(gen[m.local] === undefined) return;
+                if(m.gL > m.gV) gen[m.local] += 3;
+                else if(m.gV > m.gL) gen[m.visitor] += 3;
+                else { gen[m.local]++; gen[m.visitor]++; }
             });
-            const sorted = Object.values(table).sort((a,b) => b.pts - a.pts);
-            document.getElementById('general-standings-body').innerHTML = sorted.map((s, i) => `
+            const sorted = Object.entries(gen).sort((a,b) => b[1] - a[1]);
+            document.getElementById('general-standings-body').innerHTML = sorted.map(([name, pts], i) => `
                 <tr class="bg-white">
-                    <td class="p-5 text-center font-black">${i+1}</td>
-                    <td class="p-5 flex items-center gap-4 font-black uppercase italic">
-                        <img src="${getShield(s.name)}" class="team-logo" onerror="this.src='https://via.placeholder.com/28?text=?'">
-                        <span>${s.name}</span>
-                    </td>
-                    <td class="p-5 text-center bg-blue-900 text-white font-black text-2xl">${s.pts}</td>
-                </tr>`).join('');
+                    <td class="p-4 text-center text-slate-400 font-black">${i+1}</td>
+                    <td class="p-4 uppercase">${name}</td>
+                    <td class="p-4 text-center bg-blue-900 text-white font-black text-lg">${pts}</td>
+                </tr>
+            `).join('');
         };
 
-        window.importFixture = async (event) => {
-            if(!user) return;
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(sheet);
-                for(let row of rows) {
-                    if(row.LOCAL && row.VISITANTE) {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'matches'), {
-                            category: row.CATEGORIA || "1º DIVISION",
-                            round: row.FECHA || "FECHA",
-                            tour: "TORNEO OFICIAL",
-                            local: row.LOCAL.toString().toUpperCase().trim(),
-                            visitor: row.VISITANTE.toString().toUpperCase().trim(),
-                            gL: null, gV: null, yL: 0, rL: 0, yV: 0, rV: 0,
-                            timestamp: Date.now()
-                        });
-                    }
-                }
-                alert("Importado.");
-            };
-            reader.readAsArrayBuffer(file);
-        };
-
-        window.resetGeneralData = async () => {
-            if(!user || !confirm("¿Borrar todos los resultados?")) return;
-            for(let m of matches) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'matches', m.id));
-        };
-
-        window.exportarPDF = () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            doc.setFillColor(15, 23, 42);
-            doc.rect(0, 0, 210, 45, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(16);
-            doc.text("AMF - SISTEMA OFICIAL CLOUD", 10, 20);
-            doc.setFontSize(10);
-            doc.text("Fecha: " + new Date().toLocaleString(), 10, 30);
-            doc.save("Reporte_AMF.pdf");
-        };
-
-        // INICIAR TODO
-        startApp();
+        init();
     </script>
 </body>
 </html>
